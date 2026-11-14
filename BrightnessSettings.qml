@@ -7,8 +7,10 @@ Rectangle {
     id: panel
     required property var controller
     signal closed()
-    color: "#000000"
-    property color foreground: "#f5f5f5"
+    property bool lightTheme: false
+    property color accent: "#59caff"
+    color: lightTheme ? "#f4f6fa" : "#000000"
+    property color foreground: lightTheme ? "#182332" : "#f5f5f5"
 
     component Caption: Label {
         color: panel.foreground
@@ -22,22 +24,22 @@ Rectangle {
         rightPadding: 48
         contentItem: Text {
             text: spin.textFromValue(spin.value, spin.locale)
-            color: "#f5f5f5"
+            color: panel.foreground
             font.pixelSize: 19
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
-        background: Rectangle { color: "#202020"; radius: 4 }
+        background: Rectangle { color: panel.lightTheme ? "#ffffff" : "#202020"; radius: 4 }
         up.indicator: Rectangle {
             x: spin.width - width
             width: 48; height: spin.height
-            color: spin.up.pressed ? "#555555" : "#333333"
-            Text { anchors.centerIn: parent; text: "+"; color: "white"; font.pixelSize: 26 }
+            color: spin.up.pressed ? panel.accent : panel.lightTheme ? "#dbe3ed" : "#333333"
+            Text { anchors.centerIn: parent; text: "+"; color: panel.foreground; font.pixelSize: 26 }
         }
         down.indicator: Rectangle {
             width: 48; height: spin.height
-            color: spin.down.pressed ? "#555555" : "#333333"
-            Text { anchors.centerIn: parent; text: "−"; color: "white"; font.pixelSize: 26 }
+            color: spin.down.pressed ? panel.accent : panel.lightTheme ? "#dbe3ed" : "#333333"
+            Text { anchors.centerIn: parent; text: "−"; color: panel.foreground; font.pixelSize: 26 }
         }
     }
     component TimePicker: RowLayout {
@@ -66,7 +68,7 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Button { text: "Back"; implicitWidth: 100; implicitHeight: 48; onClicked: panel.closed() }
-            BrightnessIcon {}
+            BrightnessIcon { ink: panel.foreground }
             Caption { text: "Display brightness"; font.pixelSize: 23; Layout.fillWidth: true }
         }
         ScrollView {
@@ -91,10 +93,11 @@ Rectangle {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    BrightnessIcon { opacity: 0.45 }
+                    BrightnessIcon { opacity: 0.45; ink: panel.foreground }
                     Slider {
                         id: manualSlider
                         objectName: "manualBrightnessSlider"
+                        palette.highlight: panel.accent
                         Layout.fillWidth: true
                         implicitHeight: 52
                         from: 0; to: 100; stepSize: 1
@@ -102,7 +105,7 @@ Rectangle {
                             x: manualSlider.leftPadding + manualSlider.visualPosition * (manualSlider.availableWidth - width)
                             y: manualSlider.topPadding + (manualSlider.availableHeight - height) / 2
                             width: 32; height: 32; radius: 16
-                            color: manualSlider.pressed ? "#59caff" : "#f5f5f5"
+                            color: manualSlider.pressed ? panel.accent : panel.foreground
                         }
                         enabled: panel.controller.available
                         onMoved: panel.controller.setManual(Math.round(value))
@@ -113,7 +116,7 @@ Rectangle {
                             restoreMode: Binding.RestoreBindingOrValue
                         }
                     }
-                    BrightnessIcon {}
+                    BrightnessIcon { ink: panel.foreground }
                     Caption {
                         Layout.preferredWidth: 64
                         text: (manualSlider.pressed ? Math.max(panel.controller.minimum, Math.round(manualSlider.value)) : panel.controller.percentage) + "%"

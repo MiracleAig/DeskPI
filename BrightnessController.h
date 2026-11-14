@@ -3,6 +3,7 @@
 #include "BrightnessPolicy.h"
 #include <QThread>
 #include <QTimer>
+#include <QJsonObject>
 #include <memory>
 
 class BrightnessController : public QObject {
@@ -47,6 +48,10 @@ public:
     void setMinimum(int value);
     Q_INVOKABLE void setManual(int value);
     Q_INVOKABLE void resumeSchedule();
+    void applyPatch(const QJsonObject &patch, bool manualOverride = true);
+    void persistFields(const QVariantMap &values);
+    QString flushPersistence(); // Non-GUI caller only; drains the storage queue.
+
 signals:
     void stateChanged();
     void settingsChanged();
@@ -56,6 +61,8 @@ private:
     void reconfigure();
     void request(int value);
     void evaluate();
+    BacklightIo *m_io = nullptr;
+    QString m_settingsFile;
     BacklightState m_state;
     BrightnessPolicy::Settings m_settings;
     BrightnessPolicy::Override m_override;

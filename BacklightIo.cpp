@@ -63,3 +63,16 @@ void BacklightIo::setPercent(int percent, int minimum) {
     }
     emit stateRead(s);
 }
+
+QString BacklightIo::saveSettings(const QVariantMap &values, const QString &file) {
+    QSettings settings = file.isEmpty() ? QSettings() : QSettings(file, QSettings::IniFormat);
+    for (auto it = values.begin(); it != values.end(); ++it) settings.setValue(it.key(), it.value());
+    settings.sync();
+    m_persistenceError = settings.status() == QSettings::NoError ? QString() : QString("Cannot persist application settings.");
+    return m_persistenceError;
+}
+QString BacklightIo::flushSettings(const QString &file) {
+    QSettings settings = file.isEmpty() ? QSettings() : QSettings(file, QSettings::IniFormat);
+    settings.sync();
+    return m_persistenceError.isEmpty() && settings.status() == QSettings::NoError ? QString() : QString("Cannot persist application settings.");
+}

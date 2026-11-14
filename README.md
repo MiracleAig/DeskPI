@@ -1,12 +1,15 @@
 # DeskBuddy
 
 Qt Quick clock/dashboard for an 800×480 Raspberry Pi DSI display under Cage.
+
+The embedded web dashboard, secure setup, API and configuration recovery are
+documented in [Web administration](docs/WEB_ADMIN.md).
 The CMake target and executable are named **appdeskpi**.
 
 ## Build and run
 
 Requires Qt 6.8+ Quick (including the QtQuick Controls and Layouts QML modules),
-CMake, a C++17 compiler, and Ninja. Qt Test is required with `BUILD_TESTING=ON`
+CMake, a C++17 compiler, Ninja, Qt Network, and OpenSSL development headers. Qt Test is required with `BUILD_TESTING=ON`
 (the CTest default); use `-DBUILD_TESTING=OFF` for an application-only build.
 
 ```sh
@@ -28,7 +31,10 @@ boot, display orientation, or login configuration is changed by brightness contr
 
 ## Brightness settings
 
-Tap **Settings** in the bottom-right corner of the clock. The scrollable panel
+Press and hold the clock screen for **two seconds** to reveal a gear in the
+top-right corner, then tap it to open Settings. Short taps and drags do not reveal
+the gear. It hides again after opening Settings, keeping the clock clear when
+you return. The scrollable panel
 contains a 0–100% manual slider, hardware-reported percentage, automatic dimming,
 day/night levels, start times in 24-hour format, and minimum brightness.
 Controls are at least 48 pixels tall. Tap **Back** to return to the clock.
@@ -109,7 +115,7 @@ the current saved/manual/override policy.
 
 ### Physical touchscreen checks
 
-1. Open Settings and drag the slider: confirm the screen's light output changes,
+1. Hold the clock screen for two seconds, tap the top-right gear, and drag the slider: confirm the screen's light output changes,
    the percentage updates, and zero stops at the configured minimum.
 2. Enable automatic dimming and change the active period's level. Confirm hardware
    brightness changes, then adjust the manual slider and check the override notice.

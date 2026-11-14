@@ -1,0 +1,10 @@
+[
+  {
+    "workload": "idle_no_browser",
+    "duration_seconds": 20.05,
+    "rss_kib": 124860,
+    "max_rss_kib": 124860,
+    "system_used_kib": 273408,
+    "cpu_percent_one_core": 0.199
+  }
+]

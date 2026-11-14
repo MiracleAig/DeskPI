@@ -1,0 +1,48 @@
+[
+  {
+    "workload": "idle_no_browser",
+    "duration_seconds": 20.04,
+    "rss_kib": 127172,
+    "max_rss_kib": 128912,
+    "system_used_kib": 258220,
+    "cpu_percent_one_core": 3.144
+  },
+  {
+    "workload": "one_browser_8s_poll",
+    "duration_seconds": 20.02,
+    "rss_kib": 127760,
+    "max_rss_kib": 127760,
+    "system_used_kib": 258616,
+    "cpu_percent_one_core": 0.549,
+    "requests": 3,
+    "mean_latency_ms": 14.05,
+    "p95_latency_ms": 16.496
+  },
+  {
+    "workload": "status_refresh_1s",
+    "duration_seconds": 20.05,
+    "rss_kib": 127820,
+    "max_rss_kib": 127820,
+    "system_used_kib": 247604,
+    "cpu_percent_one_core": 1.147,
+    "requests": 20,
+    "mean_latency_ms": 10.008,
+    "p95_latency_ms": 10.43
+  },
+  {
+    "workload": "brightness_adjust_4hz",
+    "duration_seconds": 20.19,
+    "rss_kib": 127868,
+    "max_rss_kib": 127884,
+    "system_used_kib": 246476,
+    "cpu_percent_one_core": 8.568,
+    "requests": 76,
+    "mean_latency_ms": 80.387,
+    "p95_latency_ms": 83.806
+  },
+  {
+    "workload": "status_latency_30_requests",
+    "mean_latency_ms": 6.829,
+    "p95_latency_ms": 10.434
+  }
+]

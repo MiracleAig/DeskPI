@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 struct BacklightState {
     QString device, error;
@@ -20,8 +21,10 @@ public slots:
     void start();
     void poll();
     void setPercent(int percent, int minimum);
+    QString saveSettings(const QVariantMap &values, const QString &file);
+    QString flushSettings(const QString &file);
 signals:
     void stateRead(BacklightState state);
 private:
-    QString m_root;
+    QString m_root, m_persistenceError;
 };

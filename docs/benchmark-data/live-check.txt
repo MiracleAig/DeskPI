@@ -1,0 +1,8 @@
+authenticated True
+hardware_percent 40 actual_raw 102
+hardware_percent 70 actual_raw 179
+status_load_requests 75 errors []
+concurrent_status_requests 8 all_running True
+touchscreen_to_web_manual 70 -> 39
+application_reexec_and_persistence True
+preferences_restored True

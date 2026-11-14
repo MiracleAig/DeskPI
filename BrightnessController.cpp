@@ -3,10 +3,11 @@
 BrightnessController::BrightnessController(QObject *parent, QString root, QString settingsFile) : QObject(parent) {
     m_store = settingsFile.isEmpty() ? std::make_unique<QSettings>()
                                     : std::make_unique<QSettings>(settingsFile, QSettings::IniFormat);
+    m_settingsFile = settingsFile;
     m_hadManual = m_store->contains("brightness/manual");
     m_settings = BrightnessPolicy::load(*m_store);
     qRegisterMetaType<BacklightState>();
-    auto *io = new BacklightIo(std::move(root));
+    auto *io = m_io = new BacklightIo(std::move(root));
     io->moveToThread(&m_thread);
     connect(&m_thread, &QThread::started, io, &BacklightIo::start);
     connect(&m_thread, &QThread::finished, io, &QObject::deleteLater);
@@ -37,15 +38,41 @@ BrightnessController::BrightnessController(QObject *parent, QString root, QStrin
     m_thread.start();
 }
 BrightnessController::~BrightnessController() {
-    m_thread.quit(); m_thread.wait();
     persist();
+    QMetaObject::invokeMethod(m_io, [] {}, Qt::BlockingQueuedConnection);
+    m_thread.quit(); m_thread.wait();
+}
+void BrightnessController::persistFields(const QVariantMap &values) {
+    QMetaObject::invokeMethod(m_io, [io = m_io, values, file = m_settingsFile] { io->saveSettings(values, file); }, Qt::QueuedConnection);
 }
 void BrightnessController::persist() {
-    BrightnessPolicy::save(*m_store, m_settings);
-    if (m_store->status() != QSettings::NoError) {
-        m_state.error = "Brightness settings could not be saved.";
-        emit stateChanged();
-    }
+    persistFields({{"brightness/manual", manual()}, {"brightness/automatic", automatic()},
+        {"brightness/day", day()}, {"brightness/night", night()}, {"brightness/dayStart", dayStart()},
+        {"brightness/nightStart", nightStart()}, {"brightness/minimum", minimum()}});
+}
+QString BrightnessController::flushPersistence() {
+    QString error;
+    QMetaObject::invokeMethod(this, [this] { m_saveTimer.stop(); persist(); }, Qt::BlockingQueuedConnection);
+    QMetaObject::invokeMethod(m_io, [this, &error] { error = m_io->flushSettings(m_settingsFile); }, Qt::BlockingQueuedConnection);
+    return error;
+}
+void BrightnessController::applyPatch(const QJsonObject &patch, bool manualOverride) {
+    auto settings = m_settings;
+    if (patch.contains("manual")) settings.manual = patch.value("manual").toInt();
+    if (patch.contains("automatic")) settings.automatic = patch.value("automatic").toBool();
+    if (patch.contains("day")) settings.day = patch.value("day").toInt();
+    if (patch.contains("night")) settings.night = patch.value("night").toInt();
+    if (patch.contains("dayStart")) settings.dayStart = patch.value("dayStart").toInt();
+    if (patch.contains("nightStart")) settings.nightStart = patch.value("nightStart").toInt();
+    if (patch.contains("minimum")) settings.minimum = patch.value("minimum").toInt();
+    // Do not reset an override for a redundant browser update.
+    bool policyChanged = settings.automatic != automatic() || settings.day != day() || settings.night != night()
+        || settings.dayStart != dayStart() || settings.nightStart != nightStart() || settings.minimum != minimum();
+    m_settings = settings;
+    if (policyChanged) reconfigure();
+    if (patch.contains("manual") && manualOverride) setManual(settings.manual);
+    else if (!manualOverride) { reconfigure(); persist(); }
+    else { persist(); emit settingsChanged(); }
 }
 QString BrightnessController::status() const {
     if (overrideActive()) return "Manual override until " + m_override.until.toString("h:mm AP");

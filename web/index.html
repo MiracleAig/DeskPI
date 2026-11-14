@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeskBuddy · Administration</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<section id="login" class="login-card">
+  <div class="brand"><span class="logo">D</span><div>DeskBuddy<small>LOCAL ADMINISTRATION</small></div></div>
+  <h1>Your desk, your settings.</h1><p class="muted">Manage the display without interrupting your clock.</p>
+  <form id="login-form"><label>Administrator password<input id="password" type="password" autocomplete="current-password" required maxlength="128"></label><button type="submit">Sign in <span aria-hidden="true">→</span></button></form>
+  <p id="setup" hidden>First run: SSH into the Pi and run <code>~/deskbuddy/build/appdeskpi --admin-set-password</code>, then restart DeskBuddy. No default password is provided.</p>
+  <small class="muted">Private device access · No cloud connection</small>
+</section>
+<div id="shell" hidden>
+  <aside><div class="brand"><span class="logo">D</span><div>DeskBuddy<small>DEVICE CONSOLE</small></div></div>
+    <nav aria-label="Administration"><button data-page="overview" class="active">◫ <span>Overview</span></button><button data-page="display">☼ <span>Display</span></button><button data-page="clock">◷ <span>Clock</span></button><button data-page="appearance">◈ <span>Appearance</span></button><button data-page="system">⚙ <span>System</span></button></nav>
+    <div class="aside-footer"><span class="dot"></span> Local connection<button id="logout" class="quiet">Sign out</button></div>
+  </aside>
+  <main>
+    <header><div><p class="eyebrow">YOUR DESK, CONNECTED</p><h1 id="page-title">Overview</h1></div><div class="device-pill"><span class="dot"></span><span id="hostname">DeskBuddy</span></div></header>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <section data-view="overview">
+      <div class="hero"><div><span class="eyebrow">DEVICE STATUS</span><h2>Everything at a glance.</h2><p class="muted">A quiet companion. Ready when you are.</p></div><span class="status-badge">● Application running</span></div>
+      <div class="metrics">
+        <article class="card"><span class="muted">CPU usage</span><strong id="cpu">—</strong><progress id="cpu-bar" max="100" value="0" aria-label="CPU usage"></progress></article>
+        <article class="card"><span class="muted">Memory</span><strong id="memory">—</strong><progress id="memory-bar" max="100" value="0" aria-label="Memory usage"></progress><small id="memory-detail" class="muted"></small></article>
+        <article class="card"><span class="muted">CPU temperature</span><strong id="temperature">—</strong><small class="muted">On-device sensor</small></article>
+        <article class="card"><span class="muted">Display brightness</span><strong id="brightness-overview">—</strong><small id="brightness-status" class="muted"></small></article>
+      </div>
+      <div class="grid-two"><article class="card"><h2>Device health</h2><dl><dt>System uptime</dt><dd id="uptime">—</dd><dt>Storage used</dt><dd id="disk">—</dd><dt>DeskBuddy memory</dt><dd id="rss">—</dd></dl></article><article class="card"><h2>Made for your desk</h2><p class="muted">Settings update the physical display as you work. The clock keeps running.</p><button class="secondary" data-page="display">Adjust display →</button></article></div>
+    </section>
+    <section data-view="display" hidden>
+      <article class="card"><div class="section-head"><div><h2>Brightness</h2><p id="display-status" class="muted">Reading hardware…</p></div><output id="brightness-output">—</output></div><label for="brightness">Manual brightness</label><div class="range-row"><span>☼</span><input id="brightness" type="range" min="5" max="100" step="1"><span>☀</span></div><p class="muted small">Manual changes override automatic dimming until the next scheduled transition.</p><p id="display-error" role="alert"></p></article>
+      <form id="display-form" class="card"><div class="section-head"><h2>Automatic dimming</h2><label class="switch"><input id="automatic" type="checkbox"> Enable schedule</label></div><div class="grid-two"><fieldset><legend>Daytime</legend><label>Brightness (%)<input id="day" type="number" min="5" max="100" required></label><label>Starts at (Pi local time)<input id="day-start" type="time" required></label></fieldset><fieldset><legend>Nighttime</legend><label>Brightness (%)<input id="night" type="number" min="5" max="100" required></label><label>Starts at (Pi local time)<input id="night-start" type="time" required></label></fieldset></div><button type="submit">Save schedule</button></form>
+    </section>
+    <section data-view="clock" hidden><form id="clock-form" class="card form-card"><h2>Make time yours</h2><p class="muted">Changes appear immediately on the touchscreen.</p><label>Time format<select id="format24"><option value="false">12-hour · 2:30 PM</option><option value="true">24-hour · 14:30</option></select></label><label class="check"><input id="seconds" type="checkbox"> Show seconds</label><label class="check"><input id="date" type="checkbox"> Show date</label><label>Date format<select id="date-format"><option value="ddd, MMM d yyyy">Sat, Nov 14 2026</option><option value="yyyy-MM-dd">2026-11-14</option><option value="dd/MM/yyyy">14/11/2026</option><option value="MM/dd/yyyy">11/14/2026</option></select></label><button type="submit">Save clock settings</button></form></section>
+    <section data-view="appearance" hidden><form id="appearance-form" class="card form-card"><h2>A little personality</h2><p class="muted">Theme and accent apply to this dashboard and the physical DeskBuddy interface.</p><label>Theme<select id="theme"><option value="dark">Dark · black display background</option><option value="light">Light</option></select></label><label>Accent color<input id="accent" type="color" value="#59caff"></label><div class="preview"><span class="preview-dot"></span><span>DeskBuddy</span><small>YOUR ACCENT</small></div><button type="submit">Save appearance</button></form></section>
+    <section data-view="system" hidden><article class="card"><h2>Device information</h2><dl><dt>Device</dt><dd id="system-hostname">—</dd><dt>Version / Qt</dt><dd id="version">—</dd><dt>Operating system</dt><dd id="os">—</dd><dt>Network</dt><dd id="network">—</dd><dt>IP addresses</dt><dd id="addresses">—</dd></dl></article><div class="grid-two"><article class="card"><h2>Configuration backup</h2><p class="muted">Versioned settings only. Passwords and sessions are excluded. Import saves a recovery copy first.</p><div class="actions"><button id="export" class="secondary">Export settings</button><label class="file-button">Import settings<input id="import" type="file" accept="application/json,.json"></label></div></article><article class="card"><h2>Restart DeskBuddy</h2><p class="muted">Briefly reconnects the clock. Your saved settings are retained.</p><button id="restart" class="danger">Restart application</button></article></div></section>
+    <footer>DeskBuddy <span id="footer-version"></span><span>Local-first. Quiet by design.</span></footer>
+  </main>
+</div>
+<div id="global-error" role="alert" hidden></div>
+</body></html>
