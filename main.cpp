@@ -1,9 +1,11 @@
 #include <QGuiApplication>
+#include <QCursor>
 #include <QQmlApplicationEngine>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
 
     QQmlApplicationEngine engine;
     QObject::connect(

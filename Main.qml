@@ -7,7 +7,7 @@ Window {
     height: 400
     visible: true
     title: "DeskPi"
-    color: "#1E1E1E"
+    color: "#000000"
 
     property date currentTime: new Date()
 
