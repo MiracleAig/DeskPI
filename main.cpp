@@ -9,8 +9,8 @@
 
 namespace {
 void identity() {
-    QCoreApplication::setOrganizationName("DeskBuddy");
-    QCoreApplication::setApplicationName("DeskBuddy");
+    QCoreApplication::setOrganizationName("DeskPI");
+    QCoreApplication::setApplicationName("DeskPI");
     QCoreApplication::setApplicationVersion("0.2.0");
 }
 }

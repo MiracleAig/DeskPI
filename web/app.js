@@ -50,7 +50,7 @@ function render(value, force = false) {
 }
 function bytes(value) { return value == null ? 'Unavailable' : (value/1024/1024/1024 >= 1 ? (value/1024/1024/1024).toFixed(1)+' GB' : (value/1024/1024).toFixed(0)+' MB'); }
 function status(value) {
-  $('hostname').textContent = value.hostname; $('system-hostname').textContent = value.hostname;
+  $('system-hostname').textContent = value.hostname;
   $('cpu').textContent = value.cpuPercent == null ? 'Measuring…' : value.cpuPercent.toFixed(1)+'%'; $('cpu-bar').value = value.cpuPercent || 0;
   $('memory').textContent = value.memoryUsed == null ? 'Unavailable' : Math.round(value.memoryUsed/value.memoryTotal*100)+'%';
   $('memory-bar').value = value.memoryTotal ? value.memoryUsed/value.memoryTotal*100 : 0;
@@ -91,7 +91,7 @@ document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',()=>{if(e.id!=='password' && e.id!=='import')e.dataset.dirty='true';}));
 $('login-form').addEventListener('submit',event=>{
   event.preventDefault(); const b=event.submitter; b.disabled=true;b.textContent='Signing in…';
-  api('login','POST',{password:$('password').value}).then(signedIn).catch(error=>message(error.message,true)).then(()=>{b.disabled=false;b.textContent='Sign in →';});
+  api('login','POST',{password:$('password').value}).then(signedIn).catch(error=>message(error.message,true)).then(()=>{b.disabled=false;b.textContent='Sign in';});
 });
 $('logout').addEventListener('click',()=>api('logout','POST',{}).then(showLogin).catch(e=>message(e.message,true)));
 $('brightness').addEventListener('input',()=>{
@@ -108,7 +108,7 @@ $('accent').addEventListener('input',()=>document.documentElement.style.setPrope
 $('export').addEventListener('click',()=>{
   api('config/export').then(config=>{
     const url=URL.createObjectURL(new Blob([JSON.stringify(config,null,2)],{type:'application/json'}));
-    const a=document.createElement('a');a.href=url;a.download='deskbuddy-config.json';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download='deskpi-config.json';a.click();URL.revokeObjectURL(url);
   }).catch(e=>message(e.message,true));
 });
 $('import').addEventListener('change',()=>{
@@ -116,16 +116,16 @@ $('import').addEventListener('change',()=>{
   if(file.size>16384){message('Configuration must be 16 KiB or smaller.',true);$('import').value='';return;}
   file.text().then(text=>{
     const data=JSON.parse(text);
-    if(!confirm('Replace DeskBuddy settings? A recovery backup will be saved first.'))return;
+    if(!confirm('Replace DeskPI settings? A recovery backup will be saved first.'))return;
     ++busy;
     return api('config/import','POST',data).then(config=>{render(config,true);message('Configuration imported and applied.');})
       .then(()=>{--busy;},error=>{--busy;throw error;});
   }).catch(error=>message(error.message,true)).then(()=>{$('import').value='';});
 });
 $('restart').addEventListener('click',()=>{
-  if(!confirm('Restart DeskBuddy now? The clock will reconnect briefly.'))return;
+  if(!confirm('Restart DeskPI now? The clock will reconnect briefly.'))return;
   api('application/restart','POST',{confirm:true}).then(()=>{
-    message('Restarting. Sign in again when DeskBuddy returns.');setTimeout(()=>location.reload(),2500);
+    message('Restarting. Sign in again when DeskPI returns.');setTimeout(()=>location.reload(),2500);
   }).catch(error=>message(error.message,true));
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});

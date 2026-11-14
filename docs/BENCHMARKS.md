@@ -8,9 +8,9 @@ Both were built with the existing CMake/Ninja defaults and run as admin.
 
 | Metric | Before | After |
 |---|---:|---:|
-| DeskBuddy idle RSS | 121.93 MiB | 127.44 MiB |
+| DeskPI idle RSS | 121.93 MiB | 127.44 MiB |
 | System used RAM (`MemTotal - MemAvailable`) | 267.00 MiB | 259.07 MiB |
-| DeskBuddy idle CPU, percent of one core | 0.199% | 0.399% |
+| DeskPI idle CPU, percent of one core | 0.199% | 0.399% |
 | Application startup, child creation → first Wayland surface | 1.296 s | 1.743 s |
 | Authenticated status response, mean / p95, 30 requests | N/A | 6.83 / 10.43 ms |
 
@@ -46,7 +46,7 @@ measures server cost/latency, not desktop/mobile browser rendering performance.
 
 Brightness latency includes settings persistence on the SD card. The original
 configuration was restored after the workload. No extra metric-sampling timer runs
-inside DeskBuddy while browsers are absent. The benchmark harness itself consumes
+inside DeskPI while browsers are absent. The benchmark harness itself consumes
 some system RAM, equally present during before/after sampling.
 
 ## Physical and synchronization checks

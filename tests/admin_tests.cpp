@@ -44,7 +44,7 @@ class AdminTests : public QObject {
     }
 private slots:
     void initTestCase() {
-        QCoreApplication::setApplicationName("DeskBuddyTests"); QCoreApplication::setOrganizationName("DeskBuddyTests");
+        QCoreApplication::setApplicationName("DeskPITests"); QCoreApplication::setOrganizationName("DeskPITests");
         QDir().mkpath(temp.path() + "/panel");
         for (const auto &name : {"max_brightness", "brightness"}) {
             QFile f(temp.path() + "/panel/" + name); QVERIFY(f.open(QIODevice::WriteOnly)); f.write(qstrcmp(name,"max_brightness") == 0 ? "255" : "204");
@@ -62,7 +62,7 @@ private slots:
         QCOMPARE(request("/api/v1/health").code, 200);
         QCOMPARE(request("/api/v1/settings").code, 401);
         QCOMPARE(request("/api/v1/status", "GET", {}, true, "evil.example").code, 403);
-        const auto page = request("/"); QCOMPARE(page.code, 200); QVERIFY(page.data.contains("DeskBuddy")); QVERIFY(page.csp.contains("default-src 'none'"));
+        const auto page = request("/"); QCOMPARE(page.code, 200); QVERIFY(page.data.contains("DeskPI")); QVERIFY(page.csp.contains("default-src 'none'"));
         QVERIFY(request("/app.js").data.contains("setInterval(refresh,8000)"));
         QCOMPARE(request("/../../etc/passwd").code, 404);
     }

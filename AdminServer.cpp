@@ -38,8 +38,9 @@ void json(httplib::Response &res, const QJsonObject &object, int status = 200) {
 void fail(httplib::Response &res, int status, const QString &message) { json(res, failure(message), status); }
 QByteArray cookie(const httplib::Request &req) {
     const auto parts = bytes(req.get_header_value("Cookie")).split(';');
+    const QByteArray name("deskpi_session=");
     QByteArray token;
-    for (auto part : parts) { part = part.trimmed(); if (part.startsWith("deskbuddy_session=")) { if (!token.isEmpty()) return {}; token = part.mid(18); } }
+    for (auto part : parts) { part = part.trimmed(); if (part.startsWith(name)) { if (!token.isEmpty()) return {}; token = part.mid(name.size()); } }
     return token;
 }
 QString hostPort(const QString &host, int port) {
@@ -123,13 +124,13 @@ struct AdminServer::Impl {
             body = doc.object();
         }
         if (path == "/api/v1/login" && req.method == "POST") {
-            if (!auth.configured()) { fail(res, 503, "Run appdeskpi --admin-set-password from a local/SSH terminal, then restart DeskBuddy."); return; }
+            if (!auth.configured()) { fail(res, 503, "Run appdeskpi --admin-set-password from a local/SSH terminal, then restart DeskPI."); return; }
             if (!auth.rateAllowed(QString::fromStdString(req.remote_addr))) { res.set_header("Retry-After", "60"); fail(res, 429, "Too many login attempts. Try again in one minute."); return; }
             if (body.size() != 1 || !body.value("password").isString() || body.value("password").toString().toUtf8().size() > 128) { fail(res, 400, "Please enter your password. If it is very long, try a shorter password."); return; }
             const auto newToken = auth.login(body.value("password").toString().toUtf8());
             if (newToken.isEmpty()) { fail(res, 401, "Invalid credentials."); return; }
             const auto *newSession = auth.session(newToken);
-            res.set_header("Set-Cookie", "deskbuddy_session=" + str(newToken) + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800" + (options.certificate.isEmpty() ? "" : "; Secure"));
+            res.set_header("Set-Cookie", "deskpi_session=" + str(newToken) + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800" + (options.certificate.isEmpty() ? "" : "; Secure"));
             json(res, {{"authenticated", true}, {"csrf", QString::fromLatin1(newSession->csrf)}}); return;
         }
         if (!session) { fail(res, 401, "Authentication required."); return; }
@@ -137,7 +138,7 @@ struct AdminServer::Impl {
         if (path == "/api/v1/logout" && req.method == "POST") {
             if (!body.isEmpty()) { fail(res, 400, "Logout body must be empty."); return; }
             auth.logout(token);
-            res.set_header("Set-Cookie", "deskbuddy_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0" + std::string(options.certificate.isEmpty() ? "" : "; Secure"));
+            res.set_header("Set-Cookie", "deskpi_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0" + std::string(options.certificate.isEmpty() ? "" : "; Secure"));
             json(res, {{"ok", true}}); return;
         }
         if (path == "/api/v1/settings" && req.method == "GET") { json(res, snapshot()); return; }
@@ -145,7 +146,7 @@ struct AdminServer::Impl {
             auto status = metrics.collect(); status["display"] = snapshot().value("display"); json(res, status); return;
         }
         if (path == "/api/v1/config/export" && req.method == "GET") {
-            res.set_header("Content-Disposition", "attachment; filename=deskbuddy-config.json"); json(res, snapshot(true)); return;
+            res.set_header("Content-Disposition", "attachment; filename=deskpi-config.json"); json(res, snapshot(true)); return;
         }
         if (path == "/api/v1/config/import" && req.method == "POST") {
             // Validate the entire file before taking a recovery snapshot or touching live state.
@@ -186,7 +187,7 @@ struct AdminServer::Impl {
 };
 AdminServer::AdminServer(SettingsManager *s, Options o) : d(std::make_unique<Impl>(s, std::move(o))) { Q_INIT_RESOURCE(web_assets); }
 AdminServer::~AdminServer() { stop(); }
-QString AdminServer::directory() { return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/DeskBuddy"; }
+QString AdminServer::directory() { return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/DeskPI"; }
 AdminServer::Options AdminServer::options() {
     Options o;
     QFile file(directory() + "/admin-listener.json");
@@ -274,7 +275,7 @@ int AdminServer::localCommand(const QStringList &arguments) {
         if (first != second) { fprintf(stderr, "The passwords did not match. Please try again.\n"); return 2; }
         QString error;
         if (!AdminAuth::setPassword(directory() + "/admin-auth.ini", first, &error)) { fprintf(stderr, "%s\n", qPrintable(error)); return 1; }
-        fprintf(stdout, "Your password has been saved. Restart DeskBuddy to use it.\n"); return 0;
+        fprintf(stdout, "Your password has been saved. Restart DeskPI to use it.\n"); return 0;
     }
     if (!parser.isSet("admin-configure")) { fprintf(stderr, "Use --admin-set-password or --admin-configure.\n"); return 2; }
     Options o; o.address = parser.value("bind"); o.port = parser.value("port").toInt();
@@ -296,5 +297,5 @@ int AdminServer::localCommand(const QStringList &arguments) {
     }
     QJsonArray hosts; for (const auto &host : o.hosts) hosts.append(host);
     if (!saveJson(directory() + "/admin-listener.json", {{"address", o.address}, {"port", o.port}, {"hosts", hosts}, {"certificate", o.certificate}, {"key", o.key}})) return 1;
-    fprintf(stdout, "Listener configuration saved. Restart DeskBuddy to apply.\n"); return 0;
+    fprintf(stdout, "Listener configuration saved. Restart DeskPI to apply.\n"); return 0;
 }

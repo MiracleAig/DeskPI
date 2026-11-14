@@ -1,6 +1,6 @@
 # Web administration
 
-DeskBuddy 0.2 adds an embedded administration dashboard. The production runtime is
+DeskPI 0.2 adds an embedded administration dashboard. The production runtime is
 one Qt application: no Python/Node backend, database, cloud service, or extra
 systemd unit. The existing Cage launch and brightness permissions are retained.
 
@@ -13,7 +13,7 @@ health response are available. Administrative settings and metrics require login
 1. In a local terminal or an interactive SSH terminal, choose your own password:
 
    ```sh
-   ssh -t admin@192.168.0.213 '~/deskbuddy/build/appdeskpi --admin-set-password'
+   ssh -t admin@192.168.0.213 '~/deskpi/build/appdeskpi --admin-set-password'
    ```
 
    Choose a password with at least 12 letters, numbers, or symbols. A phrase made
@@ -27,7 +27,7 @@ health response are available. Administrative settings and metrics require login
 2. Restart using the existing launch mechanism. For this Pi's current session:
 
    ```sh
-   sudo systemctl restart deskbuddy-clock.service
+   sudo systemctl restart deskpi-clock.service
    sudo chvt 8
    ```
 
@@ -43,25 +43,26 @@ health response are available. Administrative settings and metrics require login
 4. Open **http://localhost:8080** and sign in. The SSH tunnel encrypts traffic
    between computers. Do not forward the dashboard through a public router.
 
-Avahi is active on the tested Pi. If your workstation resolves mDNS, use
-`admin@deskbuddy.local` instead of the IP in the SSH commands. Loopback binding
-intentionally prevents direct LAN access to `http://deskbuddy.local:8080`.
+The device also supports mDNS. If you use a local hostname, substitute the Pi's
+actual system hostname followed by `.local` in the SSH command. The default web
+listener still requires the SSH tunnel.
 
 ## Optional direct LAN HTTPS
 
-Use a certificate trusted by your browser, with a SAN for `deskbuddy.local` (and
+Replace `pi-name.local` below with the Pi’s actual local hostname.
+Use a certificate trusted by your browser, with a SAN for that hostname (and
 its IP if you intend to use the IP). Keep its private key readable only by admin.
 The configuration command rejects public/wildcard bind addresses, ports below
 1024, non-loopback listeners without TLS/password setup, and broadly readable keys.
 
 ```sh
-chmod 600 /home/admin/.config/DeskBuddy/tls/key.pem
-~/deskbuddy/build/appdeskpi --admin-configure \
-  --bind 192.168.0.213 --port 8443 --host deskbuddy.local \
-  --tls-cert /home/admin/.config/DeskBuddy/tls/cert.pem \
-  --tls-key /home/admin/.config/DeskBuddy/tls/key.pem
+chmod 600 /home/admin/.config/DeskPI/tls/key.pem
+~/deskpi/build/appdeskpi --admin-configure \
+  --bind 192.168.0.213 --port 8443 --host pi-name.local \
+  --tls-cert /home/admin/.config/DeskPI/tls/cert.pem \
+  --tls-key /home/admin/.config/DeskPI/tls/key.pem
 # Restart using the existing launcher, then visit:
-# https://deskbuddy.local:8443
+# https://pi-name.local:8443
 ```
 
 Configure certificate trust properly rather than ignoring certificate warnings.
@@ -69,7 +70,7 @@ No public interface, reverse proxy, firewall rule or router forwarding is instal
 Requests from public source addresses are also rejected. To return to SSH-only:
 
 ```sh
-~/deskbuddy/build/appdeskpi --admin-configure --bind 127.0.0.1 --port 8080
+~/deskpi/build/appdeskpi --admin-configure --bind 127.0.0.1 --port 8080
 ```
 
 A listener error is logged and leaves the clock running. `--admin-disabled` skips
@@ -174,16 +175,16 @@ brightness values are rejected. Codes: 400 validation, 401 authentication, 403
 Host/origin/CSRF, 404 route, 409 hardware/import conflict, 413 size, 415 content type,
 429 login rate limit, 500 persistence/internal failure, 503 password setup required.
 
-Restart is narrowly scoped: after confirmation and settings flush, DeskBuddy closes
+Restart is narrowly scoped: after confirmation and settings flush, DeskPI closes
 its own objects and calls `execv` with its original executable/arguments. The PID
 stays under Cage; no root, sudo, arbitrary executable or systemd action is involved.
 
 ## Configuration and recovery
 
-- Preferences: `~/.config/DeskBuddy/DeskBuddy.conf` (`brightness`, `clock`, `appearance`).
-- Credential verifier only: `~/.config/DeskBuddy/admin-auth.ini` (0600).
-- Listener/TLS paths: `~/.config/DeskBuddy/admin-listener.json` (0600 when configured).
-- Previous imported preferences: `DeskBuddy.conf.previous.json` beside the INI (0600).
+- Preferences: `~/.config/DeskPI/DeskPI.conf` (`brightness`, `clock`, `appearance`).
+- Credential verifier only: `~/.config/DeskPI/admin-auth.ini` (0600).
+- Listener/TLS paths: `~/.config/DeskPI/admin-listener.json` (0600 when configured).
+- Previous imported preferences: `DeskPI.conf.previous.json` beside the INI (0600).
 
 Exports are `{"schemaVersion":1,"settings":{"display":{...},"clock":{...},"appearance":{...}}}`.
 Import requires complete supported sections; all validation finishes before any
@@ -225,7 +226,7 @@ confirmation. No Node or browser test framework is required.
 
 See [BENCHMARKS.md](BENCHMARKS.md) for measured Pi results. The optional development
 `tools/benchmark.py` uses only Python's standard library; it is not an application
-backend and is never started by DeskBuddy.
+backend and is never started by DeskPI.
 
 A full browser host was unavailable in this development session. Automated frontend
 logic and deployed DSI rendering are tested; final desktop/mobile layout and browser
@@ -252,3 +253,13 @@ Modified:
 - `Main.qml`, `BrightnessSettings.qml` — live clock/date/theme/accent properties;
   the hidden two-second-hold gear and cursor-free clock are preserved.
 - `tests/brightness_ui_tests.cpp`, `README.md` — clock/theme checks and documentation.
+
+## DeskPI deployment paths
+
+The active Pi checkout is `~/deskpi` and the current Cage unit is
+`deskpi-clock.service`. Preferences and the administrator password verifier are
+preserved in `~/.config/DeskPI/` during the rename. Deployment backups are kept
+privately under `~/.cache/deskpi-migration/`.
+
+The existing SSH tunnel and web address still work. Sign in again after the update;
+the renamed session cookie does not carry over an earlier browser session.

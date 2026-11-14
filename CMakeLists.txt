@@ -34,17 +34,17 @@ set_target_properties(appdeskpi PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-add_library(deskbuddy_admin STATIC
+add_library(deskpi_admin STATIC
     SettingsManager.cpp SettingsManager.h AdminAuth.cpp AdminAuth.h
     AdminServer.cpp AdminServer.h SystemMetrics.cpp SystemMetrics.h)
-target_compile_features(deskbuddy_admin PRIVATE cxx_std_17)
-target_link_libraries(deskbuddy_admin PUBLIC Qt6::Network OpenSSL::SSL OpenSSL::Crypto Threads::Threads)
+target_compile_features(deskpi_admin PRIVATE cxx_std_17)
+target_link_libraries(deskpi_admin PUBLIC Qt6::Network OpenSSL::SSL OpenSSL::Crypto Threads::Threads)
 
 target_link_libraries(appdeskpi
-    PRIVATE deskbuddy_admin Qt6::Quick Qt6::Network OpenSSL::SSL OpenSSL::Crypto Threads::Threads
+    PRIVATE deskpi_admin Qt6::Quick Qt6::Network OpenSSL::SSL OpenSSL::Crypto Threads::Threads
 )
 
-qt_add_resources(deskbuddy_admin web_assets PREFIX "/" FILES
+qt_add_resources(deskpi_admin web_assets PREFIX "/" FILES
     web/index.html web/style.css web/app.js web/index.html.gz web/style.css.gz web/app.js.gz)
 
 include(CTest)
@@ -60,13 +60,13 @@ if(BUILD_TESTING)
         BacklightIo.cpp BacklightIo.h BrightnessController.cpp BrightnessController.h)
     target_include_directories(admin_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_features(admin_tests PRIVATE cxx_std_17)
-    target_link_libraries(admin_tests PRIVATE deskbuddy_admin Qt6::Test Qt6::Qml)
+    target_link_libraries(admin_tests PRIVATE deskpi_admin Qt6::Test Qt6::Qml)
     add_test(NAME admin COMMAND admin_tests)
     qt_add_executable(brightness_ui_tests tests/brightness_ui_tests.cpp SettingsManager.cpp SettingsManager.h
         BacklightIo.cpp BacklightIo.h BrightnessController.cpp BrightnessController.h)
     target_include_directories(brightness_ui_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_features(brightness_ui_tests PRIVATE cxx_std_17)
-    target_compile_definitions(brightness_ui_tests PRIVATE DESKBUDDY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_definitions(brightness_ui_tests PRIVATE DESKPI_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     target_link_libraries(brightness_ui_tests PRIVATE Qt6::Quick Qt6::Test)
     add_test(NAME brightness_ui COMMAND brightness_ui_tests)
     set_tests_properties(brightness_ui PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")

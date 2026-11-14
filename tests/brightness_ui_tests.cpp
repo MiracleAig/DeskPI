@@ -23,7 +23,7 @@ private slots:
         SettingsManager settings(&controller, temp.filePath("settings.ini"));
         QQmlApplicationEngine engine;
         engine.setInitialProperties({{"brightnessController", QVariant::fromValue(&controller)}, {"settingsManager", QVariant::fromValue(&settings)}});
-        engine.load(QUrl::fromLocalFile(QStringLiteral(DESKBUDDY_SOURCE_DIR "/Main.qml")));
+        engine.load(QUrl::fromLocalFile(QStringLiteral(DESKPI_SOURCE_DIR "/Main.qml")));
         QVERIFY(!engine.rootObjects().isEmpty());
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
         QVERIFY(window); QTRY_VERIFY(controller.available());

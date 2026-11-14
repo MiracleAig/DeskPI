@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Development-only benchmark. Python is not part of DeskBuddy's runtime."""
+"""Development-only benchmark. Python is not part of DeskPI's runtime."""
 import argparse
 import getpass
 import http.cookiejar
@@ -18,7 +18,7 @@ parser.add_argument('--output')
 args = parser.parse_args()
 processes = [p for p in Path('/proc').iterdir() if p.name.isdigit() and (p/'comm').exists() and (p/'comm').read_text().strip() == 'appdeskpi']
 if len(processes) != 1:
-    raise SystemExit('Run against exactly one DeskBuddy process.')
+    raise SystemExit('Run against exactly one DeskPI process.')
 pid = processes[0].name
 hz = os.sysconf('SC_CLK_TCK')
 jar = http.cookiejar.CookieJar()
@@ -60,7 +60,7 @@ def measure(name, work=None, interval=8):
 
 results=[measure('idle_no_browser')]
 if args.authenticated:
-    password=os.environ.get('DESKBUDDY_TEST_PASSWORD') or getpass.getpass('DeskBuddy administrator password: ')
+    password=os.environ.get('DESKPI_TEST_PASSWORD') or getpass.getpass('DeskPI administrator password: ')
     csrf=api('login','POST',{'password':password})['csrf']; del password
     original=api('config/export')
     results.append(measure('one_browser_8s_poll',lambda:(api('settings'),api('status')),8))

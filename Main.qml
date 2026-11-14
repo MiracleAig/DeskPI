@@ -8,7 +8,7 @@ Window {
     width: 800
     height: 480
     visible: true
-    title: "DeskPi"
+    title: "DeskPI"
     color: settingsManager.theme === "light" ? "#f4f6fa" : "#000000"
 
     property date currentTime: new Date()

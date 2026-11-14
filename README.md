@@ -1,4 +1,4 @@
-# DeskBuddy
+# DeskPI
 
 Qt Quick clock/dashboard for an 800×480 Raspberry Pi DSI display under Cage.
 
@@ -63,7 +63,7 @@ by evaluation of local time; override expiry is an absolute next-transition inst
 
 QSettings stores manual level, enabled state, both scheduled levels and times,
 and the minimum. On Linux this is normally
-`~/.config/DeskBuddy/DeskBuddy.conf`. Missing settings use defaults (the first
+`~/.config/DeskPI/DeskPI.conf`. Missing settings use defaults (the first
 manual level adopts the current hardware brightness). Invalid settings are
 validated, clamped, or replaced with defaults; equal start times revert to 07:00/22:00.
 
