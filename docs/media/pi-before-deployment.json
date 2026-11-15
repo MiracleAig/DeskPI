@@ -1,0 +1,1 @@
+{"hardware": "Raspberry Pi 3B+ aarch64 Qt 6.8.2", "pid": "1093", "seconds": 5.00142824500017, "rss_kib": 138720, "pss_kib": null, "pss_unavailable_reason": "proc smaps_rollup denied to SSH user", "cpu_percent_one_core": 0.5998286595432097, "system_used_kib": 393248, "note": "old deployed build; compile may overlap this sample"}

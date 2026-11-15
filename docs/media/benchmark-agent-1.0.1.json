@@ -1,0 +1,144 @@
+{
+  "platform": "x86_64",
+  "qt": "6.12.0",
+  "rendering": "offscreen Qt Quick software",
+  "pi_hardware": false,
+  "startup_to_https_health_ms": 53.3,
+  "approval_to_initial_sync_ms": 1113.6,
+  "release_download": {
+    "file": "deskbuddy-agent-1.0.1-linux-x86_64.tar.gz",
+    "bytes": 139427,
+    "sha256_verified": true
+  },
+  "agent_largest_rss_mappings_kib": [
+    [
+      "/usr/lib/libcrypto.so.4",
+      4528
+    ],
+    [
+      "/usr/lib/libQt6Core.so.6.12.0",
+      4356
+    ],
+    [
+      "[heap]",
+      3180
+    ],
+    [
+      "/usr/lib/libstdc++.so.6.0.36",
+      1708
+    ],
+    [
+      "/usr/lib/libc.so.6",
+      1660
+    ],
+    [
+      "/usr/lib/libQt6Network.so.6.12.0",
+      1648
+    ],
+    [
+      "/usr/lib/libQt6Gui.so.6.12.0",
+      1408
+    ],
+    [
+      "/usr/lib/libicui18n.so.78.3",
+      1116
+    ],
+    [
+      "/usr/lib/libssl.so.4",
+      1028
+    ],
+    [
+      "/usr/lib/libglib-2.0.so.0.9000.1",
+      956
+    ],
+    [
+      "/usr/lib/libpcre2-16.so.0.16.1",
+      740
+    ],
+    [
+      "/usr/lib/libsystemd.so.0.45.0",
+      484
+    ],
+    [
+      "/usr/lib/libicuuc.so.78.3",
+      464
+    ],
+    [
+      "/usr/lib/libgobject-2.0.so.0.9000.1",
+      460
+    ],
+    [
+      "/usr/lib/libQt6DBus.so.6.12.0",
+      360
+    ]
+  ],
+  "results": [
+    {
+      "workload": "clock_only_current_binary_no_listeners",
+      "seconds": 3.0,
+      "processes": {
+        "deskpi": {
+          "rss_kib": 65376,
+          "pss_kib": 38353,
+          "cpu_percent_one_core": 0.0
+        }
+      },
+      "system_used_kib": 7981180
+    },
+    {
+      "workload": "existing_dashboard_tls_media_disabled",
+      "seconds": 3.0,
+      "processes": {
+        "deskpi": {
+          "rss_kib": 69876,
+          "pss_kib": 41347,
+          "cpu_percent_one_core": 0.0
+        }
+      },
+      "system_used_kib": 7982436
+    },
+    {
+      "workload": "receiver_idle",
+      "seconds": 3.0,
+      "processes": {
+        "deskpi": {
+          "rss_kib": 73116,
+          "pss_kib": 44125,
+          "cpu_percent_one_core": 0.0
+        }
+      },
+      "system_used_kib": 7972908
+    },
+    {
+      "workload": "simulated_playback_visible",
+      "seconds": 3.0,
+      "processes": {
+        "deskpi": {
+          "rss_kib": 76720,
+          "pss_kib": 43531,
+          "cpu_percent_one_core": 0.0
+        },
+        "agent": {
+          "rss_kib": 32528,
+          "pss_kib": 12202,
+          "cpu_percent_one_core": 0.0
+        }
+      },
+      "system_used_kib": 7994988
+    },
+    {
+      "workload": "host_disconnected",
+      "seconds": 3.0,
+      "processes": {
+        "deskpi": {
+          "rss_kib": 76764,
+          "pss_kib": 47267,
+          "cpu_percent_one_core": 0.0
+        }
+      },
+      "system_used_kib": 7989676
+    }
+  ],
+  "application_log": "",
+  "agent_log": ""
+}

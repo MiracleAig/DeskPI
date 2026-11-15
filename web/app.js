@@ -30,6 +30,7 @@ function setInput(id, value, check = false) {
 function render(value, force = false) {
   settings = value;
   if (force) document.querySelectorAll('[data-dirty]').forEach(e => delete e.dataset.dirty);
+  if(value.media)for(const [key,val] of Object.entries(value.media))setInput('media-'+key,val,typeof val==='boolean');
   const d = value.display, c = value.clock, a = value.appearance;
   const safe = Math.max(5,d.minimum);
   $('brightness').min = safe; $('day').min = safe; $('night').min = safe;
@@ -64,7 +65,7 @@ function status(value) {
 }
 function refresh() {
   if (!authenticated || document.hidden || busy || document.querySelector('[data-dirty]')) return Promise.resolve();
-  return Promise.all([api('settings'),api('status')]).then(values => { render(values[0]); status(values[1]); })
+  return Promise.all([api('settings'),api('status')]).then(values => { render(values[0]); status(values[1]); if(!$('device-list').closest('section').hidden)refreshDevices(); })
     .catch(error => message('Connection interrupted. Retrying automatically. '+error.message,true));
 }
 function write(section, patch) {
@@ -72,7 +73,7 @@ function write(section, patch) {
   ++busy;
   chain = chain.catch(()=>{}).then(()=>api('settings/'+section,'PATCH',patch)).then(saved=>{
     const ids = {manual:'brightness',dayStart:'day-start',nightStart:'night-start',dateFormat:'date-format'};
-    for (const key of Object.keys(patch)) {const element=$(ids[key]||key);if(element)delete element.dataset.dirty;}
+    for (const key of Object.keys(patch)) {const element=$(section==='media'?'media-'+key:ids[key]||key);if(element)delete element.dataset.dirty;}
     render(saved); message('Settings saved and applied.');
   }).catch(error => message(error.message,true)).then(()=>{--busy;});
   return chain;
@@ -80,7 +81,8 @@ function write(section, patch) {
 function navigate(page) {
   document.querySelectorAll('[data-view]').forEach(e=>e.hidden = e.dataset.view!==page);
   document.querySelectorAll('nav [data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===page));
-  $('page-title').textContent = page[0].toUpperCase()+page.slice(1);
+  $('page-title').textContent = page==='devices'?'Connected Devices':page==='media'?'Media Settings':page[0].toUpperCase()+page.slice(1);
+  if(page==='devices')refreshDevices();
 }
 function signedIn(session) {
   csrf = session.csrf; authenticated = true; $('password').value = '';
@@ -131,3 +133,38 @@ $('restart').addEventListener('click',()=>{
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 api('session').then(session=>{$('setup').hidden=!session.setupRequired;if(session.authenticated)return signedIn(session);})
   .catch(error=>message('Unable to connect. '+error.message,true));
+
+function deviceAction(action,id) {
+  return api('media/'+action,'POST',id?{id}:{}).then(refreshDevices).catch(e=>message(e.message,true));
+}
+function refreshDevices() {
+  return Promise.all([api('media/devices'),api('media/releases')]).then(([value,releases])=>{
+    $('media-listener').textContent=value.listening?'Secure media listener active. Selected host: '+(value.selected||'none'):(value.error||'Configure administrator TLS and restart DeskPI to enable the receiver.');
+    $('device-list').replaceChildren();$('pair-requests').replaceChildren();$('agent-releases').replaceChildren();
+    for(const d of value.devices) {
+      const row=document.createElement('p');const text=document.createElement('span');
+      text.textContent=d.name+' · '+d.os+' · '+(d.connected?'Connected':'Offline')+' · '+(d.session||'No player')+' · ID: '+d.id+' ';
+      row.append(text);const preferred=document.createElement('button');preferred.textContent='Prefer this host';preferred.onclick=()=>write('media',{preferredHost:d.id});row.append(preferred);
+      const revoke=document.createElement('button');revoke.textContent='Revoke';revoke.onclick=()=>deviceAction('revoke',d.id);row.append(revoke);$('device-list').append(row);
+    }
+    for(const d of value.pending) {
+      const row=document.createElement('p');row.textContent=d.name+' · '+d.os+' ';
+      const approve=document.createElement('button');approve.textContent='Approve computer';approve.onclick=()=>deviceAction('approve',d.id);row.append(approve);$('pair-requests').append(row);
+    }
+    if(!releases.releases.length)$('agent-releases').textContent='No verified companion packages installed on this Pi.';
+    for(const release of releases.releases) {
+      const row=document.createElement('p'),link=document.createElement('a');link.textContent=release.file+' · '+release.platform;link.href='/api/v1/media/download/'+encodeURIComponent(release.file);row.append(link);
+      const checksum=document.createElement('small');checksum.textContent=' SHA256: '+release.sha256;row.append(checksum);$('agent-releases').append(row);
+    }
+  }).catch(e=>message(e.message,true));
+}
+$('start-pairing').onclick=()=>api('media/pair','POST',{}).then(value=>{
+  $('pair-details').textContent='Pairing code: '+value.code+' · Expires in '+value.expires_seconds+' seconds. Certificate SHA256: '+value.certificate_sha256;
+  setTimeout(()=>{$('pair-details').textContent='Pairing code expired. Start a new session if needed.';},value.expires_seconds*1000);
+  refreshDevices();
+}).catch(e=>message(e.message,true));
+$('media-form').onsubmit=e=>{
+  e.preventDefault();const patch={};for(const key of Object.keys(settings.media)) {
+    const el=$('media-'+key);patch[key]=el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value;
+  }write('media',patch);
+};

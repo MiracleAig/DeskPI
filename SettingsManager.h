@@ -33,6 +33,6 @@ signals:
 private:
     BrightnessController *m_brightness;
     QString m_file;
-    QJsonObject m_clock, m_appearance;
+    QJsonObject m_clock, m_appearance, m_media;
     void persistExtras();
 };

@@ -1,0 +1,30 @@
+[Unit]
+Description=DeskPI display and web administration
+Wants=network-online.target
+After=network-online.target systemd-user-sessions.service systemd-logind.service
+Requires=systemd-logind.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/deskpi
+PAMName=login
+TTYPath=/dev/tty8
+StandardInput=tty-force
+TTYReset=yes
+Environment=XDG_SESSION_TYPE=wayland
+Environment=XDG_SEAT=seat0
+Environment=XDG_VTNR=8
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=LIBSEAT_BACKEND=logind
+ExecStartPre=+/usr/bin/chvt 8
+ExecStart=/usr/bin/cage -d -- /usr/bin/env QT_QPA_PLATFORM=wayland /home/admin/deskpi/build/appdeskpi
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

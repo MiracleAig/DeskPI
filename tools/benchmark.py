@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import statistics
+import ssl
 import time
 import urllib.request
 
@@ -14,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seconds', type=int, default=20)
 parser.add_argument('--url', default='http://127.0.0.1:8080')
 parser.add_argument('--authenticated', action='store_true')
+parser.add_argument('--ca-file', help='Trust this local HTTPS certificate for the benchmark.')
 parser.add_argument('--output')
 args = parser.parse_args()
 processes = [p for p in Path('/proc').iterdir() if p.name.isdigit() and (p/'comm').exists() and (p/'comm').read_text().strip() == 'appdeskpi']
@@ -22,7 +24,10 @@ if len(processes) != 1:
 pid = processes[0].name
 hz = os.sysconf('SC_CLK_TCK')
 jar = http.cookiejar.CookieJar()
-client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+handlers = [urllib.request.HTTPCookieProcessor(jar)]
+if args.ca_file:
+    handlers.append(urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=args.ca_file)))
+client = urllib.request.build_opener(*handlers)
 csrf = ''
 
 def api(path, method='GET', data=None):

@@ -7,6 +7,7 @@
 #include "third_party/httplib.h"
 #include "AdminServer.h"
 #include "AdminAuth.h"
+#include "media/MediaReceiver.h"
 #include "SystemMetrics.h"
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -17,6 +18,8 @@
 #include <QDir>
 #include <QSaveFile>
 #include <QHostAddress>
+#include <QHostInfo>
+#include <QNetworkInterface>
 #include <QCommandLineParser>
 #include <QTimer>
 #include <QCryptographicHash>
@@ -46,6 +49,22 @@ QByteArray cookie(const httplib::Request &req) {
 QString hostPort(const QString &host, int port) {
     return (host.contains(':') ? "[" + host + "]" : host.toLower()) + ":" + QString::number(port);
 }
+bool allowedHost(const AdminServer::Options &options, const QString &host) {
+    if (options.hosts.contains(host)) return true;
+    if (options.address != "lan") return false;
+    const QString hostname = QHostInfo::localHostName().toLower();
+    if (host == hostPort(hostname, options.port) || host == hostPort(hostname + ".local", options.port)) return true;
+    // Evaluate current local addresses on demand so DHCP changes do not require
+    // a restart. A DNS name resolving to an address is never accepted as that IP.
+    for (const auto &iface : QNetworkInterface::allInterfaces()) {
+        if (!(iface.flags() & QNetworkInterface::IsUp)) continue;
+        for (const auto &entry : iface.addressEntries()) {
+            const QString address = entry.ip().toString();
+            if (AdminServer::privateAddress(address) && host == hostPort(address, options.port)) return true;
+        }
+    }
+    return false;
+}
 bool saveJson(const QString &path, const QJsonObject &data) {
     QDir().mkpath(QFileInfo(path).absolutePath());
     QSaveFile f(path); if (!f.open(QIODevice::WriteOnly)) return false;
@@ -56,6 +75,7 @@ bool saveJson(const QString &path, const QJsonObject &data) {
 }
 struct AdminServer::Impl {
     SettingsManager *settings;
+    MediaReceiver *media;
     Options options;
     AdminAuth auth;
     SystemMetrics metrics;
@@ -63,7 +83,7 @@ struct AdminServer::Impl {
     std::thread listener;
     std::atomic<bool> finished{false};
     QHash<QString, QByteArray> assets;
-    Impl(SettingsManager *s, Options o) : settings(s), options(std::move(o)), auth(options.authFile) {}
+    Impl(SettingsManager *s, Options o, MediaReceiver *m) : settings(s), media(m), options(std::move(o)), auth(options.authFile) {}
     QJsonObject snapshot(bool exportOnly = false) {
         QJsonObject result;
         QMetaObject::invokeMethod(settings, [&, this] { result = exportOnly ? settings->exportConfig() : settings->snapshot(); }, Qt::BlockingQueuedConnection);
@@ -88,7 +108,7 @@ struct AdminServer::Impl {
         security(res);
         if (!AdminServer::privateAddress(QString::fromStdString(req.remote_addr))) { fail(res, 403, "Only loopback/private-network clients are allowed."); return; }
         const QString host = QString::fromStdString(req.get_header_value("Host")).toLower();
-        if (req.get_header_value_count("Host") != 1 || !options.hosts.contains(host)) { fail(res, 403, "Host is not allowed."); return; }
+        if (req.get_header_value_count("Host") != 1 || !allowedHost(options, host)) { fail(res, 403, "Host is not allowed."); return; }
         const QString path = QString::fromStdString(req.path);
         const bool changing = req.method != "GET" && req.method != "HEAD";
         const QString expectedOrigin = (options.certificate.isEmpty() ? "http://" : "https://") + host;
@@ -141,6 +161,35 @@ struct AdminServer::Impl {
             res.set_header("Set-Cookie", "deskpi_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0" + std::string(options.certificate.isEmpty() ? "" : "; Secure"));
             json(res, {{"ok", true}}); return;
         }
+        if((path=="/api/v1/media/releases" || path.startsWith("/api/v1/media/download/")) && req.method=="GET") {
+            const auto root=qEnvironmentVariable("DESKBUDDY_RELEASE_DIR", "/usr/local/share/deskbuddy/releases");
+            QFile manifest(root+"/manifest.json");QJsonArray releases;
+            if(manifest.open(QIODevice::ReadOnly))releases=QJsonDocument::fromJson(manifest.read(16384)).array();
+            QJsonArray available;
+            for(const auto &v:releases) {
+                auto r=v.toObject();const auto name=r.value("file").toString();
+                if(!QRegularExpression("^deskbuddy-agent-[a-zA-Z0-9_.-]+\\.tar\\.gz$").match(name).hasMatch())continue;
+                QFileInfo fi(root+"/"+name);if(!fi.isFile()||fi.isSymLink()||fi.size()>32*1024*1024)continue;
+                available.append(r);
+                if(path=="/api/v1/media/download/"+name) {
+                    auto f=std::make_shared<QFile>(fi.absoluteFilePath());if(!f->open(QIODevice::ReadOnly)){fail(res,404,"Release unavailable.");return;}
+                    res.set_header("Content-Disposition", "attachment; filename="+name.toStdString());
+                    res.set_content_provider(size_t(fi.size()),"application/gzip",[f](size_t offset,size_t length,httplib::DataSink &sink){if(!f->seek(qint64(offset)))return false;auto data=f->read(qMin<size_t>(length,65536));return !data.isEmpty()&&sink.write(data.constData(),size_t(data.size()));});return;
+                }
+            }
+            if(path=="/api/v1/media/releases"){json(res,{{"releases",available}});return;}
+            fail(res,404,"No built release for that architecture.");return;
+        }
+        if(path=="/api/v1/media/devices" && req.method=="GET") {
+            if(!media){fail(res,503,"Media receiver unavailable.");return;}
+            QJsonObject result; QMetaObject::invokeMethod(media,[&]{result=media->devices();},Qt::BlockingQueuedConnection);json(res,result);return;
+        }
+        if(path.startsWith("/api/v1/media/") && req.method=="POST") {
+            if(!media){fail(res,503,"Media receiver unavailable.");return;}
+            QJsonObject result; const auto action=path.mid(QString("/api/v1/media/").size());
+            QMetaObject::invokeMethod(media,[&]{result=media->administer(action,body);},Qt::BlockingQueuedConnection);
+            if(!result.contains("devices")&&result.contains("error")&&result.value("error").isString()&&!result.value("error").toString().isEmpty()){fail(res,400,result.value("error").toString());return;}json(res,result);return;
+        }
         if (path == "/api/v1/settings" && req.method == "GET") { json(res, snapshot()); return; }
         if (path == "/api/v1/status" && req.method == "GET") {
             auto status = metrics.collect(); status["display"] = snapshot().value("display"); json(res, status); return;
@@ -154,8 +203,9 @@ struct AdminServer::Impl {
             QMetaObject::invokeMethod(settings, [&] {
                 const auto current = settings->snapshot();
                 const auto expected = settings->exportConfig().value("settings").toObject();
-                if (body.size() != 2 || body.value("schemaVersion") != QJsonValue(1) || !body.value("settings").isObject() || body.value("settings").toObject().size() != 3) validation = "Unsupported configuration format.";
-                else for (const QString section : {"display", "clock", "appearance"}) {
+                if (body.size() != 2 || body.value("schemaVersion") != QJsonValue(1) || !body.value("settings").isObject() || ((body.value("settings").toObject().size() != 3 && body.value("settings").toObject().size() != 4) || (body.value("settings").toObject().size()==4&&!body.value("settings").toObject().contains("media")))) validation = "Unsupported configuration format.";
+                else for (const QString section : {"display", "clock", "appearance", "media"}) {
+                    if(section=="media"&&!body.value("settings").toObject().contains(section))continue;
                     const auto value = body.value("settings").toObject().value(section);
                     if (!value.isObject() || value.toObject().size() != expected.value(section).toObject().size()) { validation = "Incomplete configuration section."; break; }
                     validation = SettingsManager::validate(section, value.toObject(), current);
@@ -185,7 +235,7 @@ struct AdminServer::Impl {
         fail(res, 404, "Not found.");
     }
 };
-AdminServer::AdminServer(SettingsManager *s, Options o) : d(std::make_unique<Impl>(s, std::move(o))) { Q_INIT_RESOURCE(web_assets); }
+AdminServer::AdminServer(SettingsManager *s, Options o, MediaReceiver *m) : d(std::make_unique<Impl>(s, std::move(o), m)) { Q_INIT_RESOURCE(web_assets); }
 AdminServer::~AdminServer() { stop(); }
 QString AdminServer::directory() { return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/DeskPI"; }
 AdminServer::Options AdminServer::options() {
@@ -198,7 +248,10 @@ AdminServer::Options AdminServer::options() {
         o.certificate = doc.value("certificate").toString(); o.key = doc.value("key").toString();
     }
     o.authFile = directory() + "/admin-auth.ini";
-    if (o.hosts.isEmpty()) o.hosts = {hostPort("localhost", o.port), hostPort(o.address, o.port)};
+    if (o.hosts.isEmpty()) {
+        o.hosts = {hostPort("localhost", o.port)};
+        if (o.address != "lan") o.hosts.append(hostPort(o.address, o.port));
+    }
     return o;
 }
 bool AdminServer::privateAddress(const QString &address) {
@@ -210,7 +263,7 @@ bool AdminServer::privateAddress(const QString &address) {
 bool AdminServer::start(QString *error) {
     const auto &o = d->options;
     const bool loopback = QHostAddress(o.address).isLoopback();
-    if (!privateAddress(o.address) || o.port < 1024 || o.port > 65535 || (!loopback && (o.certificate.isEmpty() || !d->auth.configured()))) { *error = "Admin listener rejected: use loopback, or a private address with TLS and a configured password."; return false; }
+    if ((o.address != "lan" && !privateAddress(o.address)) || o.port < 1024 || o.port > 65535 || (!loopback && (o.certificate.isEmpty() || !d->auth.configured()))) { *error = "Admin listener rejected: use loopback, or LAN access with TLS and a configured password."; return false; }
     if (o.certificate.isEmpty()) d->server = std::make_unique<httplib::Server>();
     else {
         d->server = std::make_unique<httplib::SSLServer>(o.certificate.toUtf8().constData(), o.key.toUtf8().constData());
@@ -226,7 +279,7 @@ bool AdminServer::start(QString *error) {
         const auto host = QString::fromStdString(req.get_header_value("Host")).toLower();
         const auto origin = (d->options.certificate.isEmpty() ? "http://" : "https://") + host;
         const bool changes = req.method != "GET" && req.method != "HEAD";
-        if (req.get_header_value_count("Host") != 1 || !d->options.hosts.contains(host)
+        if (req.get_header_value_count("Host") != 1 || !allowedHost(d->options, host)
             || (changes && QString::fromStdString(req.get_header_value("Origin")) != origin)
             || req.get_header_value("Sec-Fetch-Site") == "cross-site"
             || !AdminServer::privateAddress(QString::fromStdString(req.remote_addr))) {
@@ -238,13 +291,13 @@ bool AdminServer::start(QString *error) {
     const auto handler = [this](const httplib::Request &req, httplib::Response &res) {
         try { d->serve(req, res); } catch (...) { d->security(res); fail(res, 500, "Internal administration error."); }
     };
-    for (const auto *path : {"/", "/app.js", "/style.css", "/api/v1/health", "/api/v1/session", "/api/v1/settings", "/api/v1/status", "/api/v1/config/export"}) d->server->Get(path, handler);
-    for (const auto *path : {"/api/v1/login", "/api/v1/logout", "/api/v1/config/import", "/api/v1/application/restart"}) d->server->Post(path, handler);
-    for (const auto *path : {"/api/v1/settings/display", "/api/v1/settings/clock", "/api/v1/settings/appearance"}) d->server->Patch(path, handler);
+    for (const auto *path : {"/", "/app.js", "/style.css", "/api/v1/health", "/api/v1/session", "/api/v1/settings", "/api/v1/status", "/api/v1/config/export", "/api/v1/media/devices", "/api/v1/media/releases", "/api/v1/media/download/.*"}) d->server->Get(path, handler);
+    for (const auto *path : {"/api/v1/login", "/api/v1/logout", "/api/v1/config/import", "/api/v1/application/restart", "/api/v1/media/pair", "/api/v1/media/approve", "/api/v1/media/revoke"}) d->server->Post(path, handler);
+    for (const auto *path : {"/api/v1/settings/display", "/api/v1/settings/clock", "/api/v1/settings/appearance", "/api/v1/settings/media"}) d->server->Patch(path, handler);
     d->server->set_error_handler([this](const httplib::Request &, httplib::Response &res) {
         d->security(res); if (res.body.empty()) fail(res, res.status, "HTTP request rejected.");
     });
-    if (!d->server->bind_to_port(o.address.toUtf8().constData(), o.port)) { *error = "Cannot bind admin listener (address unavailable or port in use)."; return false; }
+    if (!d->server->bind_to_port(o.address == "lan" ? "0.0.0.0" : o.address.toUtf8().constData(), o.port)) { *error = "Cannot bind admin listener (address unavailable or port in use)."; return false; }
     d->listener = std::thread([this] { d->server->listen_after_bind(); d->finished = true; });
     return true;
 }
@@ -264,7 +317,7 @@ int AdminServer::localCommand(const QStringList &arguments) {
     QCommandLineParser parser;
     parser.addOptions({{"admin-set-password", "Set/reset the administrator password locally."},
         {"admin-configure", "Configure listener; non-loopback requires TLS and password."},
-        {"bind", "Listener IP address.", "address", "127.0.0.1"}, {"port", "Port.", "port", "8080"},
+        {"bind", "Listener IP address, or lan for private-network HTTPS access.", "address", "127.0.0.1"}, {"port", "Port.", "port", "8080"},
         {"host", "Additional allowed DNS hostname (repeatable).", "host"},
         {"tls-cert", "PEM certificate path.", "path"}, {"tls-key", "PEM private-key path.", "path"}});
     if (!parser.parse(arguments)) { fprintf(stderr, "%s\n", qPrintable(parser.errorText())); return 2; }
@@ -283,13 +336,13 @@ int AdminServer::localCommand(const QStringList &arguments) {
     if (!parser.isSet("tls-cert")) o.certificate.clear(); if (!parser.isSet("tls-key")) o.key.clear();
     const bool loopback = QHostAddress(o.address).isLoopback();
     AdminAuth auth(directory() + "/admin-auth.ini");
-    if (!privateAddress(o.address) || o.port < 1024 || o.port > 65535 || (!loopback && (o.certificate.isEmpty() || o.key.isEmpty() || !auth.configured()))) {
-        fprintf(stderr, "Use a loopback address or a private LAN address with TLS files and an administrator password. Port must be 1024–65535.\n"); return 2;
+    if ((o.address != "lan" && !privateAddress(o.address)) || o.port < 1024 || o.port > 65535 || (!loopback && (o.certificate.isEmpty() || o.key.isEmpty() || !auth.configured()))) {
+        fprintf(stderr, "Use loopback, or --bind lan with TLS files and an administrator password. Port must be 1024–65535.\n"); return 2;
     }
     if (!o.certificate.isEmpty() && (!QFileInfo::exists(o.certificate) || !QFileInfo::exists(o.key) || (QFileInfo(o.key).permissions() & (QFile::ReadGroup | QFile::ReadOther | QFile::WriteGroup | QFile::WriteOther)))) {
         fprintf(stderr, "TLS files must exist and the private key must be owner-only (chmod 600).\n"); return 2;
     }
-    o.hosts = {hostPort(o.address, o.port)};
+    o.hosts = o.address == "lan" ? QStringList{hostPort("localhost", o.port)} : QStringList{hostPort(o.address, o.port)};
     if (loopback) o.hosts.append(hostPort("localhost", o.port));
     for (const QString &host : parser.values("host")) {
         if (!QRegularExpression("^[a-zA-Z0-9][a-zA-Z0-9.-]{0,252}$").match(host).hasMatch()) { fprintf(stderr, "Invalid allowed hostname.\n"); return 2; }

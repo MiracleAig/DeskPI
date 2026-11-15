@@ -11,6 +11,8 @@
 #include <QSslConfiguration>
 #include <QSslCertificate>
 #include "AdminServer.h"
+#include "media/MediaReceiver.h"
+#include <QJsonArray>
 #include "AdminAuth.h"
 #include "SystemMetrics.h"
 
@@ -19,6 +21,7 @@ class AdminTests : public QObject {
     QTemporaryDir temp;
     std::unique_ptr<BrightnessController> brightness;
     std::unique_ptr<SettingsManager> settings;
+    std::unique_ptr<MediaReceiver> media;
     std::unique_ptr<AdminServer> server;
     QNetworkAccessManager network;
     QString base;
@@ -55,7 +58,8 @@ private slots:
         QTcpServer probe; QVERIFY(probe.listen(QHostAddress::LocalHost, 0)); int port = probe.serverPort(); probe.close();
         AdminServer::Options options; options.port = port; options.authFile = temp.filePath("auth.ini"); options.hosts = {"127.0.0.1:" + QString::number(port)};
         base = "http://127.0.0.1:" + QString::number(port);
-        server = std::make_unique<AdminServer>(settings.get(), options); QVERIFY2(server->start(&error), qPrintable(error));
+        media=std::make_unique<MediaReceiver>(settings.get(),temp.filePath("media-devices.json"));
+        server = std::make_unique<AdminServer>(settings.get(), options, media.get()); QVERIFY2(server->start(&error), qPrintable(error));
         QTRY_VERIFY(brightness->available());
     }
     void publicAndHostChecks() {
@@ -94,6 +98,20 @@ private slots:
         brightness->setManual(60);
         const auto browser = request("/api/v1/settings").json.value("display").toObject(); QCOMPARE(browser.value("manual").toInt(), 60);
     }
+    void mediaDashboardSettings(){
+        QCOMPARE(request("/api/v1/media/devices").code,200);
+        QCOMPARE(request("/api/v1/media/pair","POST","{}",false).code,403);
+        QCOMPARE(request("/api/v1/media/pair","POST","{}").code,400); // No TLS listener in this fixture.
+        QCOMPARE(request("/api/v1/settings/media","PATCH",R"({"animations":false,"returnSeconds":45})").code,200);
+        QCOMPARE(settings->snapshot().value("media").toObject().value("returnSeconds").toInt(),45);
+        QCOMPARE(request("/api/v1/settings/media","PATCH",R"({"returnSeconds":-1})").code,400);
+        const auto releases=temp.filePath("releases");QDir().mkpath(releases);qputenv("DESKBUDDY_RELEASE_DIR",releases.toUtf8());
+        const QString name="deskbuddy-agent-test-linux-x86_64.tar.gz";QFile artifact(releases+"/"+name);QVERIFY(artifact.open(QIODevice::WriteOnly));artifact.write("synthetic test archive");artifact.close();
+        QFile manifest(releases+"/manifest.json");QVERIFY(manifest.open(QIODevice::WriteOnly));manifest.write(QJsonDocument(QJsonArray{QJsonObject{{"file",name},{"platform","test fixture"}}}).toJson());manifest.close();
+        QCOMPARE(request("/api/v1/media/releases").json.value("releases").toArray().size(),1);
+        QCOMPARE(request("/api/v1/media/download/"+name).data,QByteArray("synthetic test archive"));
+        QCOMPARE(request("/api/v1/media/download/deskbuddy-agent-missing.tar.gz").code,404);
+    }
     void configImportExport() {
         const auto exported = request("/api/v1/config/export"); QCOMPARE(exported.code, 200);
         QVERIFY(!exported.data.contains("password")); QVERIFY(!exported.data.contains("salt")); QVERIFY(!exported.data.contains("hash"));
@@ -123,14 +141,21 @@ private slots:
         openssl.start("openssl", {"req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=localhost", "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost", "-keyout", key, "-out", cert});
         QVERIFY(openssl.waitForFinished(30000)); QCOMPARE(openssl.exitCode(), 0);
         QTcpServer probe; QVERIFY(probe.listen(QHostAddress::LocalHost, 0)); const int port = probe.serverPort(); probe.close();
-        AdminServer::Options o; o.port = port; o.certificate = cert; o.key = key; o.authFile = temp.filePath("auth.ini"); o.hosts = {"127.0.0.1:" + QString::number(port)};
+        AdminServer::Options o; o.address = "lan"; o.port = port; o.certificate = cert; o.key = key; o.authFile = temp.filePath("auth.ini");
         AdminServer tls(settings.get(), o); QString error; QVERIFY2(tls.start(&error), qPrintable(error));
         const auto oldBase = base; base = "https://127.0.0.1:" + QString::number(port);
         auto previous = QSslConfiguration::defaultConfiguration(); auto trusted = previous;
         QFile f(cert); QVERIFY(f.open(QIODevice::ReadOnly)); trusted.addCaCertificates(QSslCertificate::fromData(f.readAll())); QSslConfiguration::setDefaultConfiguration(trusted);
         auto reply = request("/api/v1/login", "POST", R"({"password":"test password only 12345"})");
         base = oldBase; QSslConfiguration::setDefaultConfiguration(previous);
-        QCOMPARE(reply.code, 200); QVERIFY(reply.cookie.contains("; Secure")); tls.stop();
+        QCOMPARE(reply.code, 200); QVERIFY(reply.cookie.contains("; Secure"));
+        base = "https://127.0.0.1:" + QString::number(port);
+        QSslConfiguration::setDefaultConfiguration(trusted);
+        QCOMPARE(request("/api/v1/health", "GET", {}, true, "evil.example").code, 403);
+        base = oldBase; QSslConfiguration::setDefaultConfiguration(previous);
+        tls.stop();
+        AdminServer::Options insecure = o; insecure.certificate.clear(); insecure.key.clear();
+        AdminServer rejected(settings.get(), insecure); QVERIFY(!rejected.start(&error));
     }
     void frontendAssets() {
         QFile jsFile(":/web/app.js"); QVERIFY(jsFile.open(QIODevice::ReadOnly));

@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.16)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(deskbuddy-agent VERSION 1.0.1 LANGUAGES CXX)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Network WebSockets Gui Concurrent)
+    qt_standard_project_setup(REQUIRES 6.8)
+endif()
+add_library(deskbuddy_companion STATIC
+    MediaProvider.h MprisProvider.h MprisProvider.cpp ArtworkProcessor.h ArtworkProcessor.cpp
+    ProtocolClient.h ProtocolClient.cpp AgentConfig.h)
+target_compile_features(deskbuddy_companion PUBLIC cxx_std_17)
+target_link_libraries(deskbuddy_companion PUBLIC Qt6::DBus Qt6::WebSockets Qt6::Network Qt6::Gui Qt6::Concurrent)
+qt_add_executable(deskbuddy-agent main.cpp)
+target_link_libraries(deskbuddy-agent PRIVATE deskbuddy_companion)
+install(TARGETS deskbuddy-agent RUNTIME DESTINATION bin)
+install(FILES deskbuddy-agent.service DESTINATION lib/systemd/user)

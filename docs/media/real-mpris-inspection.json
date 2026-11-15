@@ -1,0 +1,9 @@
+{
+    "can_control": true,
+    "can_seek": true,
+    "duration_known": true,
+    "has_artwork_uri": true,
+    "has_title": true,
+    "session_id": "org.mpris.MediaPlayer2.plasma-browser-integration",
+    "status": "playing"
+}

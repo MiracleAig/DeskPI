@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeskPI · Administration</title><link rel="stylesheet" href="/style.css?v=deskpi-1"><script src="/app.js?v=deskpi-1" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeskPI · Administration</title><link rel="stylesheet" href="/style.css?v=deskpi-media-1"><script src="/app.js?v=deskpi-media-1" defer></script></head>
 <body>
 <section id="login" class="login-card">
   <h1>DeskPI</h1>
@@ -10,7 +10,7 @@
 </section>
 <div id="shell" hidden>
   <aside><div class="brand">DeskPI</div>
-    <nav aria-label="Administration"><button data-page="overview" class="active">Overview</button><button data-page="display">Display</button><button data-page="clock">Clock</button><button data-page="appearance">Appearance</button><button data-page="system">System</button></nav>
+    <nav aria-label="Administration"><button data-page="overview" class="active">Overview</button><button data-page="display">Display</button><button data-page="clock">Clock</button><button data-page="appearance">Appearance</button><button data-page="devices">Connected Devices</button><button data-page="media">Media Settings</button><button data-page="system">System</button></nav>
     <div class="aside-footer"><button id="logout" class="quiet">Sign out</button></div>
   </aside>
   <main>
@@ -32,6 +32,24 @@
     <section data-view="clock" hidden><form id="clock-form" class="card form-card"><h2>Clock settings</h2><label>Time format<select id="format24"><option value="false">12-hour · 2:30 PM</option><option value="true">24-hour · 14:30</option></select></label><label class="check"><input id="seconds" type="checkbox"> Show seconds</label><label class="check"><input id="date" type="checkbox"> Show date</label><label>Date format<select id="date-format"><option value="ddd, MMM d yyyy">Sat, Nov 14 2026</option><option value="yyyy-MM-dd">2026-11-14</option><option value="dd/MM/yyyy">14/11/2026</option><option value="MM/dd/yyyy">11/14/2026</option></select></label><button type="submit">Save clock settings</button></form></section>
     <section data-view="appearance" hidden><form id="appearance-form" class="card form-card"><h2>Appearance</h2><p class="muted">Applies to the touchscreen and web interface.</p><label>Theme<select id="theme"><option value="dark">Dark · black display background</option><option value="light">Light</option></select></label><label>Accent color<input id="accent" type="color" value="#59caff"></label><button type="submit">Save appearance</button></form></section>
     <section data-view="system" hidden><article class="card"><h2>Device information</h2><dl><dt>Hostname</dt><dd id="system-hostname">—</dd><dt>Version / Qt</dt><dd id="version">—</dd><dt>Operating system</dt><dd id="os">—</dd><dt>Network</dt><dd id="network">—</dd><dt>IP addresses</dt><dd id="addresses">—</dd></dl></article><div class="grid-two"><article class="card"><h2>Configuration backup</h2><p class="muted">Backups exclude passwords. Import saves a recovery copy.</p><div class="actions"><button id="export" class="secondary">Export settings</button><label class="file-button">Import settings<input id="import" type="file" accept="application/json,.json"></label></div></article><article class="card"><h2>Restart DeskPI</h2><p class="muted">Restarts the clock. Saved settings are kept.</p><button id="restart" class="danger">Restart application</button></article></div></section>
+    <section data-view="devices" hidden>
+      <article class="card"><h2>Connected Devices</h2><p id="media-listener"></p><div id="device-list"></div><button id="start-pairing">Start pairing</button><p id="pair-details"></p><div id="pair-requests"></div></article>
+      <article class="card"><h2>Linux companion</h2><p>Download the build matching your architecture and distribution. Extract it and follow INSTALL.md. Verify the certificate fingerprint shown during pairing before connecting. No compilation runs on this Pi.</p><div id="agent-releases"></div></article>
+    </section>
+    <section data-view="media" hidden><form id="media-form" class="card form-card"><h2>Media Settings</h2>
+      <label class="check"><input id="media-enabled" type="checkbox"> Enable media integration</label>
+      <label class="check"><input id="media-autoSwitch" type="checkbox"> Open media screen automatically</label>
+      <label>Return to clock after pause, stop or disconnect (seconds)<input id="media-returnSeconds" type="number" min="1" max="600" required></label>
+      <label>Preferred host device ID (blank for automatic)<input id="media-preferredHost" maxlength="256"></label>
+      <label>Preferred MPRIS service (blank for automatic)<input id="media-preferredPlayer" placeholder="org.mpris.MediaPlayer2.spotify" maxlength="256"></label>
+      <label class="check"><input id="media-gradients" type="checkbox"> Adaptive gradients</label>
+      <label class="check"><input id="media-animations" type="checkbox"> Animate color transitions</label>
+      <label class="check"><input id="media-showAlbum" type="checkbox"> Show album title</label>
+      <label class="check"><input id="media-showArtwork" type="checkbox"> Show artwork</label>
+      <label class="check"><input id="media-nonMusic" type="checkbox"> Open for video and unknown media types</label>
+      <label>Maximum compressed artwork per host (KiB)<input id="media-artworkLimitKiB" type="number" min="16" max="160" required></label>
+      <p>Artwork cache: one compressed image per host, up to eight hosts. No Pi disk cache. Host processing caches only the latest image and palette.</p>
+      <button type="submit">Save media settings</button></form></section>
     <footer>DeskPI <span id="footer-version"></span></footer>
   </main>
 </div>

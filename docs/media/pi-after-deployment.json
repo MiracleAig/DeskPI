@@ -1,0 +1,10 @@
+{
+  "hardware": "Raspberry Pi 3B+ aarch64 Qt 6.8.2",
+  "pid": "2004",
+  "seconds": 5.001680454000052,
+  "rss_kib": 142256,
+  "pss_kib": null,
+  "cpu_percent_one_core": 0.7997312176952515,
+  "system_used_kib": 237736,
+  "note": "media receiver connected to real Linux desktop; UI track/artwork confirmed by user; PSS unavailable to SSH user"
+}

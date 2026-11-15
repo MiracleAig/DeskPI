@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=DeskBuddy Companion
+Exec=deskbuddy-agent
+Terminal=false
+X-GNOME-Autostart-enabled=true

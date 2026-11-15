@@ -3,6 +3,7 @@ import QtQuick.Controls
 
 Window {
     id: window
+    property var mediaController: null
     required property var brightnessController
     required property var settingsManager
     width: 800
@@ -106,6 +107,21 @@ Window {
         }
     }
 
+    Loader {
+        objectName: "mediaLoader"
+        anchors.fill: parent
+        active: window.mediaController !== null && window.mediaController.screenRequested && !window.settingsOpen
+        visible: active && window.mediaController.screenRequested && !window.settingsOpen
+        function loadMedia() { if (active) setSource(Qt.resolvedUrl("MediaScreen.qml"), {"controller": window.mediaController}) }
+        onActiveChanged: loadMedia()
+        Component.onCompleted: loadMedia()
+    }
+    Button {
+        anchors.left: parent.left; anchors.bottom: parent.bottom; anchors.margins: 12
+        visible: window.mediaController !== null && window.mediaController.options.enabled && !window.settingsOpen && !window.mediaController.screenRequested
+        text: "♫ Media"; width: 104; height: 48
+        onClicked: window.mediaController.reopen()
+    }
     BrightnessSettings {
         anchors.fill: parent
         visible: window.settingsOpen

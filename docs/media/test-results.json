@@ -1,0 +1,43 @@
+{
+  "measurements": [
+    "Artwork processing ms 13 JPEG bytes 2328",
+    "Reconnect ms 2368",
+    "Metadata change to software frame ms (50ms polling resolution) 52",
+    "30 software frame grabs ms 1",
+    "120 artwork changes ms 7337 RSS before/after KiB 94188 95996 delta 1808"
+  ],
+  "suites_passed": 5,
+  "pi_hardware": false,
+  "test_cases": [
+    "BrightnessTests::conversion()",
+    "BrightnessTests::minimumProtection()",
+    "BrightnessTests::rangeDetection()",
+    "BrightnessTests::persistenceAndCorruption()",
+    "BrightnessTests::scheduleBoundaries()",
+    "BrightnessTests::manualOverride()",
+    "BrightnessTests::missingAmbiguousAndRemoved()",
+    "BrightnessTests::writesAndPermissions()",
+    "BrightnessTests::controllerLifecycle()",
+    "AdminTests::publicAndHostChecks()",
+    "AdminTests::loginAndGuiResponsiveness()",
+    "AdminTests::csrfAndValidation()",
+    "AdminTests::settingsAndPersistence()",
+    "AdminTests::mediaDashboardSettings()",
+    "AdminTests::configImportExport()",
+    "AdminTests::missingSensorsAndHardware()",
+    "AdminTests::concurrentRequests()",
+    "AdminTests::tlsCookies()",
+    "AdminTests::frontendAssets()",
+    "AdminTests::sessionsAndRateLimit()",
+    "BrightnessUiTests::touchscreenSlider()",
+    "MediaTests::validationAndInterpolation()",
+    "MediaTests::artworkProcessing()",
+    "MediaTests::pairingAndRouting()",
+    "MediaTests::clientReconnectAndAuthentication()",
+    "MediaTests::multipleHostsAndPinning()",
+    "MediaTests::malformedAndRevocation()",
+    "MediaTests::configuration()",
+    "MediaTests::mprisDiscoveryAndCommands()",
+    "MediaUiTests::renderAndDismiss()"
+  ]
+}

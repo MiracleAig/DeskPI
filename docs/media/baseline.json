@@ -1,0 +1,16 @@
+{
+  "platform": "x86_64 Qt 6.12 offscreen/software, admin disabled",
+  "memory_kib": {
+    "Rss": 65212,
+    "Pss": 32637
+  },
+  "cpu_one_core_percent": 0.0,
+  "sample_seconds": 5,
+  "startup": "not instrumented",
+  "pi_hardware": false,
+  "system_ram_mib_initial_free_snapshot": {
+    "total": 15428,
+    "used": 9559,
+    "available": 5868
+  }
+}

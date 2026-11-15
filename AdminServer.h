@@ -3,6 +3,7 @@
 #include <memory>
 #include <QStringList>
 
+class MediaReceiver;
 class AdminServer {
 public:
     struct Options {
@@ -11,7 +12,7 @@ public:
         QStringList hosts;
         QString certificate, key, authFile;
     };
-    explicit AdminServer(SettingsManager *settings, Options options);
+    explicit AdminServer(SettingsManager *settings, Options options, MediaReceiver *media = nullptr);
     ~AdminServer();
     bool start(QString *error);
     void stop();

@@ -2,7 +2,10 @@
 
 Qt Quick clock/dashboard for an 800×480 Raspberry Pi DSI display under Cage.
 
-The embedded web dashboard, secure setup, API and configuration recovery are
+Home-network dashboard: **https://deskpi.local:8443** (no SSH tunnel). The Pi
+starts DeskPI automatically at boot. Sign in with your administrator password.
+
+The embedded web dashboard, local certificate trust, API and configuration recovery are
 documented in [Web administration](docs/WEB_ADMIN.md).
 The CMake target and executable are named **appdeskpi**.
 
@@ -140,3 +143,18 @@ confirmed visible dimming and brightening. A temporary local-time test schedule
 started at 20%, accepted an 80% manual override, and at 13:52 cleared the override
 and changed requested/actual brightness to 153/255 (60%). Normal 07:00/22:00 times,
 80%/20% levels and disabled automatic mode were restored after testing.
+
+## DeskBuddy cross-device media (Linux first)
+
+A native, headless `deskbuddy-agent` monitors the desktop user's MPRIS sessions
+and connects to DeskPI over a certificate-pinned TLS WebSocket. The existing
+application now includes a touch media screen, host artwork/palette processing,
+transport controls, Connected Devices pairing/revocation, Media Settings and
+prebuilt companion downloads in the original dashboard. No audio is streamed.
+
+Start with [Linux installation and pairing](docs/media/INSTALL.md). See the
+[architecture](docs/media/ARCHITECTURE.md), [v1 protocol](docs/media/PROTOCOL.md),
+[validation and performance report](docs/media/VALIDATION.md), and
+[implementation file inventory](docs/media/FILES.md). The verified workstation
+[screenshot](docs/media/media-screen.png) is an offscreen rendering, not a Pi
+hardware test. Existing Cage/brightness/dashboard operation is retained.

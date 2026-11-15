@@ -1,0 +1,63 @@
+# Implementation file inventory
+
+Existing user edits were preserved. This inventory lists files changed by this media task; generated build directories are excluded.
+
+## Modified existing files
+
+- [AdminServer.cpp](../../AdminServer.cpp)
+- [AdminServer.h](../../AdminServer.h)
+- [CMakeLists.txt](../../CMakeLists.txt)
+- [Main.qml](../../Main.qml)
+- [README.md](../../README.md)
+- [SettingsManager.cpp](../../SettingsManager.cpp)
+- [SettingsManager.h](../../SettingsManager.h)
+- [main.cpp](../../main.cpp)
+- [tests/admin_tests.cpp](../../tests/admin_tests.cpp)
+- [web/app.js](../../web/app.js)
+- [web/app.js.gz](../../web/app.js.gz)
+- [web/index.html](../../web/index.html)
+- [web/index.html.gz](../../web/index.html.gz)
+
+## Created files
+
+- [docs/media/DEPLOYMENT_CHECK.md](../../docs/media/DEPLOYMENT_CHECK.md)
+- [docs/media/pi-before-deployment.json](../../docs/media/pi-before-deployment.json)
+- [docs/media/pi-after-deployment.json](../../docs/media/pi-after-deployment.json)
+- [docs/media/benchmark-agent-1.0.1.json](../../docs/media/benchmark-agent-1.0.1.json)
+- [MediaScreen.qml](../../MediaScreen.qml)
+- [companion/AgentConfig.h](../../companion/AgentConfig.h)
+- [companion/ArtworkProcessor.cpp](../../companion/ArtworkProcessor.cpp)
+- [companion/ArtworkProcessor.h](../../companion/ArtworkProcessor.h)
+- [companion/CMakeLists.txt](../../companion/CMakeLists.txt)
+- [companion/MediaProvider.h](../../companion/MediaProvider.h)
+- [companion/MprisProvider.cpp](../../companion/MprisProvider.cpp)
+- [companion/MprisProvider.h](../../companion/MprisProvider.h)
+- [companion/ProtocolClient.cpp](../../companion/ProtocolClient.cpp)
+- [companion/ProtocolClient.h](../../companion/ProtocolClient.h)
+- [companion/deskbuddy-agent.desktop](../../companion/deskbuddy-agent.desktop)
+- [companion/deskbuddy-agent.service](../../companion/deskbuddy-agent.service)
+- [companion/install.sh](../../companion/install.sh)
+- [companion/main.cpp](../../companion/main.cpp)
+- [companion/uninstall.sh](../../companion/uninstall.sh)
+- [docs/media/ARCHITECTURE.md](../../docs/media/ARCHITECTURE.md)
+- [docs/media/FILES.md](../../docs/media/FILES.md)
+- [docs/media/INSTALL.md](../../docs/media/INSTALL.md)
+- [docs/media/PROTOCOL.md](../../docs/media/PROTOCOL.md)
+- [docs/media/VALIDATION.md](../../docs/media/VALIDATION.md)
+- [docs/media/baseline.json](../../docs/media/baseline.json)
+- [docs/media/benchmark.json](../../docs/media/benchmark.json)
+- [docs/media/media-screen.png](../../docs/media/media-screen.png)
+- [docs/media/real-mpris-inspection.json](../../docs/media/real-mpris-inspection.json)
+- [docs/media/test-results.json](../../docs/media/test-results.json)
+- [media/MediaReceiver.cpp](../../media/MediaReceiver.cpp)
+- [media/MediaReceiver.h](../../media/MediaReceiver.h)
+- [media/Protocol.h](../../media/Protocol.h)
+- [media/RoundedArtwork.h](../../media/RoundedArtwork.h)
+- [releases/deskbuddy-agent-1.0.1-linux-x86_64.tar.gz](../../releases/deskbuddy-agent-1.0.1-linux-x86_64.tar.gz)
+- [releases/manifest.json](../../releases/manifest.json)
+- [tests/media_tests.cpp](../../tests/media_tests.cpp)
+- [tests/media_ui_tests.cpp](../../tests/media_ui_tests.cpp)
+- [tools/media_benchmark.py](../../tools/media_benchmark.py)
+- [tools/package_agent.py](../../tools/package_agent.py)
+
+The working tree already contained edits to AdminServer.cpp, README.md, tests/admin_tests.cpp, docs/WEB_ADMIN.md and tools/benchmark.py, plus deployment files. This task extends the first three; it leaves the existing docs/WEB_ADMIN.md, tools/benchmark.py and deployment changes intact. No commit was created.

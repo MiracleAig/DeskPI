@@ -4,77 +4,77 @@ DeskPI 0.2 adds an embedded administration dashboard. The production runtime is
 one Qt application: no Python/Node backend, database, cloud service, or extra
 systemd unit. The existing Cage launch and brightness permissions are retained.
 
-## Safe first-run access
+## Home-network access on this Pi
 
-The default listener is **127.0.0.1:8080**. There is **no default password**.
-Before password setup, only the static login shell, setup status, and a minimal
-health response are available. Administrative settings and metrics require login.
+Open **https://deskpi.local:8443** on a computer or phone connected to your home
+network. The current direct IP address also works: **https://192.168.0.213:8443**.
+Sign in with your existing DeskPI administrator password. No SSH tunnel is needed.
 
-1. In a local terminal or an interactive SSH terminal, choose your own password:
+DeskPI now starts automatically when the Pi boots and restarts after a crash.
+The persistent unit is `/etc/systemd/system/deskpi-clock.service`, enabled under
+`multi-user.target`. It runs Cage and DeskPI as admin. The one fixed privileged
+pre-start command activates tty8 so logind can grant the physical display session.
+No root web application or separate backend is introduced.
 
-   ```sh
-   ssh -t admin@192.168.0.213 '~/deskpi/build/appdeskpi --admin-set-password'
-   ```
+The Pi advertises `deskpi.local` through its existing Avahi service. Its operating
+system hostname is independent. LAN listening accepts changing local IPv4 addresses,
+so a DHCP address change does not require editing the listener or restarting the app;
+the `.local` address is the preferred bookmark.
 
-   Choose a password with at least 12 letters, numbers, or symbols. A phrase made
-   from a few words is an easy option. Enter it again when asked to confirm it.
-   Nothing appears on screen while you type your password; this is normal.
-   The same command can be used to change your password later.
+### Local HTTPS certificate
 
-   The command does not open the touchscreen app. It stores a protected password
-   verifier with mode 0600 and never accepts a password in command-line arguments.
+The certificate was generated locally for this Pi. Because a public certificate
+authority did not issue it, a browser can display a certificate warning on first use.
+Add a certificate exception only for this Pi's address after checking its fingerprint;
+this is a one-time browser trust decision, not a requirement to keep SSH open.
 
-2. Restart using the existing launch mechanism. For this Pi's current session:
+SHA-256 certificate fingerprint:
 
-   ```sh
-   sudo systemctl restart deskpi-clock.service
-   sudo chvt 8
-   ```
-
-   This is the already-existing transient Cage service; no boot/autostart service
-   has been created or changed. If launching Cage manually, exit and relaunch it.
-
-3. Forward the loopback listener over SSH from your workstation:
-
-   ```sh
-   ssh -N -L 8080:127.0.0.1:8080 admin@192.168.0.213
-   ```
-
-4. Open **http://localhost:8080** and sign in. The SSH tunnel encrypts traffic
-   between computers. Do not forward the dashboard through a public router.
-
-The device also supports mDNS. If you use a local hostname, substitute the Pi's
-actual system hostname followed by `.local` in the SSH command. The default web
-listener still requires the SSH tunnel.
-
-## Optional direct LAN HTTPS
-
-Replace `pi-name.local` below with the Pi’s actual local hostname.
-Use a certificate trusted by your browser, with a SAN for that hostname (and
-its IP if you intend to use the IP). Keep its private key readable only by admin.
-The configuration command rejects public/wildcard bind addresses, ports below
-1024, non-loopback listeners without TLS/password setup, and broadly readable keys.
-
-```sh
-chmod 600 /home/admin/.config/DeskPI/tls/key.pem
-~/deskpi/build/appdeskpi --admin-configure \
-  --bind 192.168.0.213 --port 8443 --host pi-name.local \
-  --tls-cert /home/admin/.config/DeskPI/tls/cert.pem \
-  --tls-key /home/admin/.config/DeskPI/tls/key.pem
-# Restart using the existing launcher, then visit:
-# https://pi-name.local:8443
+```
+B7:C2:FE:80:3A:2E:F1:38:4E:AD:2E:44:38:6E:54:5C:45:56:CC:A2:EA:C8:03:4C:62:FF:B0:56:82:2B:C1:CA
 ```
 
-Configure certificate trust properly rather than ignoring certificate warnings.
-No public interface, reverse proxy, firewall rule or router forwarding is installed.
-Requests from public source addresses are also rejected. To return to SSH-only:
+Certificate: `~/.config/DeskPI/tls/deskpi-cert.pem`.
+Private key: `~/.config/DeskPI/tls/deskpi-key.pem`, owner-only permissions.
+A certificate trusted by your devices can replace these files if desired. Never
+copy or publish the private key. Keep the dashboard on the home network; no router
+port forwarding or public exposure was configured.
+
+### Setup and maintenance
+
+The binary still defaults to loopback on a fresh installation until authentication
+and LAN HTTPS have been explicitly configured. The deployed Pi is already configured.
+To change your password from a local or SSH terminal:
 
 ```sh
-~/deskpi/build/appdeskpi --admin-configure --bind 127.0.0.1 --port 8080
+~/deskpi/build/appdeskpi --admin-set-password
+sudo systemctl restart deskpi-clock.service
 ```
 
-A listener error is logged and leaves the clock running. `--admin-disabled` skips
-server startup for troubleshooting. Listener/password changes load on app restart.
+Choose a password with at least 12 letters, numbers, or symbols. A phrase made from
+a few words is an easy option. Nothing appears while you type; this is normal.
+Your saved settings are retained after a restart.
+
+The deployed listener was configured with:
+
+```sh
+~/deskpi/build/appdeskpi --admin-configure --bind lan --port 8443 \
+  --host deskpi.local --host deskpi \
+  --tls-cert /home/admin/.config/DeskPI/tls/deskpi-cert.pem \
+  --tls-key /home/admin/.config/DeskPI/tls/deskpi-key.pem
+```
+
+`--bind lan` uses an IPv4 listener on all interfaces while accepting only private/
+loopback source addresses and exact local/configured Host names. It requires both
+a configured password and TLS. Arbitrary wildcard/public bind addresses and
+unencrypted LAN access remain rejected.
+
+For loopback-only access instead, configure `--bind 127.0.0.1 --port 8080`, restart,
+and use an SSH forward. This is an optional restriction, not the deployed default.
+
+The checked-in `deployment/deskpi-clock.service` is the persistent launcher. It
+waits for network-online and logind, activates tty8, and uses `Restart=always`.
+`--admin-disabled` remains available for troubleshooting.
 
 ## Architecture and dependencies
 
@@ -256,10 +256,10 @@ Modified:
 
 ## DeskPI deployment paths
 
-The active Pi checkout is `~/deskpi` and the current Cage unit is
+The active Pi checkout is `~/deskpi` and the persistent Cage unit is
 `deskpi-clock.service`. Preferences and the administrator password verifier are
 preserved in `~/.config/DeskPI/` during the rename. Deployment backups are kept
 privately under `~/.cache/deskpi-migration/`.
 
-The existing SSH tunnel and web address still work. Sign in again after the update;
+The direct home-network web address is listed above. Sign in again after an update;
 the renamed session cookie does not carry over an earlier browser session.
